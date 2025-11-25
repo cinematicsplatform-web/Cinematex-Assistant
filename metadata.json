@@ -1,0 +1,5 @@
+{
+  "name": "Cinematex Assistant",
+  "description": "مساعد سينماتيكس: أداة متطورة لاستخراج بيانات الأفلام والمسلسلات من الكود المصدري وتصديرها إلى Excel.",
+  "requestFramePermissions": []
+}

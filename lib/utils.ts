@@ -1,0 +1,12 @@
+import { type ClassValue, clsx } from "clsx";
+import { twMerge } from "tailwind-merge";
+
+export function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs));
+}
+
+export const generateId = () => Math.random().toString(36).substr(2, 9);
+
+export const formatTime = () => {
+  return new Date().toLocaleTimeString('ar-EG', { hour12: false });
+};
