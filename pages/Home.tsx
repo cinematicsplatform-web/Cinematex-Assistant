@@ -3,7 +3,7 @@ import React from 'react';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { useNavigate } from 'react-router-dom';
-import { Bot, FileSpreadsheet, Zap, Code2, ArrowRight } from 'lucide-react';
+import { Bot, FileSpreadsheet, Zap, Code2, ArrowRight, ExternalLink, Clapperboard } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 export const Home: React.FC = () => {
@@ -43,7 +43,7 @@ export const Home: React.FC = () => {
       </div>
 
       {/* Feature Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-5xl px-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full max-w-7xl px-4">
         
         {/* Tool 1: AI Extractor (New) */}
         <motion.div
@@ -100,13 +100,39 @@ export const Home: React.FC = () => {
           </Card>
         </motion.div>
 
+        {/* Tool 3: TMDB External Link */}
+        <motion.div
+           initial={{ opacity: 0, y: 20 }}
+           animate={{ opacity: 1, y: 0 }}
+           transition={{ delay: 0.5 }}
+        >
+          <Card className="h-full group hover:border-cyan-500/40 hover:bg-slate-800/80 transition-all duration-300">
+             <div className="flex flex-col items-start text-right h-full p-2">
+               <div className="p-3 rounded-xl bg-cyan-500/10 text-cyan-400 mb-4 group-hover:scale-110 transition-transform">
+                 <Clapperboard className="w-8 h-8" />
+               </div>
+               <h3 className="text-2xl font-bold text-white mb-2">موسوعة TMDB</h3>
+               <p className="text-slate-400 text-sm mb-6 flex-1">
+                 الوصول السريع إلى قاعدة بيانات الأفلام العالمية (The Movie Database) للبحث عن المعلومات والصور.
+               </p>
+               <Button 
+                 onClick={() => window.open('https://www.themoviedb.org/', '_blank')}
+                 className="w-full bg-slate-800 hover:bg-cyan-600/20 hover:text-cyan-300 border border-slate-700"
+                 icon={<ExternalLink className="w-4 h-4 ml-2" />}
+               >
+                 فتح الموقع
+               </Button>
+             </div>
+          </Card>
+        </motion.div>
+
       </div>
 
       {/* Stats/Info */}
       <motion.div 
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ delay: 0.5 }}
+        transition={{ delay: 0.6 }}
         className="grid grid-cols-3 gap-8 text-center pt-8 border-t border-white/5 w-full max-w-2xl"
       >
         <div>

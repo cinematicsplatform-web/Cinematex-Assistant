@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Film, Menu, X, Bot } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
@@ -8,7 +7,7 @@ interface LayoutProps {
   children: React.ReactNode;
 }
 
-export const Layout: React.FC = ({ children }) => {
+export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
   const location = useLocation();
 
