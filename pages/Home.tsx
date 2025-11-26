@@ -1,9 +1,8 @@
-
 import React from 'react';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { useNavigate } from 'react-router-dom';
-import { Bot, FileSpreadsheet, Zap, Code2, ArrowRight, ExternalLink, Clapperboard } from 'lucide-react';
+import { Bot, FileSpreadsheet, Zap, ArrowRight, ExternalLink } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 export const Home: React.FC = () => {
@@ -106,10 +105,14 @@ export const Home: React.FC = () => {
            animate={{ opacity: 1, y: 0 }}
            transition={{ delay: 0.5 }}
         >
-          <Card className="h-full group hover:border-cyan-500/40 hover:bg-slate-800/80 transition-all duration-300">
+          <Card className="h-full group hover:border-[#01b4e4]/40 hover:bg-slate-800/80 transition-all duration-300">
              <div className="flex flex-col items-start text-right h-full p-2">
-               <div className="p-3 rounded-xl bg-cyan-500/10 text-cyan-400 mb-4 group-hover:scale-110 transition-transform">
-                 <Clapperboard className="w-8 h-8" />
+               <div className="p-3 rounded-xl bg-[#0d253f] mb-4 group-hover:scale-110 transition-transform flex items-center justify-center">
+                 <img 
+                    src="https://www.themoviedb.org/assets/2/v4/logos/v2/blue_square_2-d537fb228cf3ded904ef09b136fe3fec72548ebc1fea3fbbd1ad9e36364db38b.svg" 
+                    alt="TMDB" 
+                    className="w-8 h-8"
+                 />
                </div>
                <h3 className="text-2xl font-bold text-white mb-2">موسوعة TMDB</h3>
                <p className="text-slate-400 text-sm mb-6 flex-1">
@@ -117,7 +120,7 @@ export const Home: React.FC = () => {
                </p>
                <Button 
                  onClick={() => window.open('https://www.themoviedb.org/', '_blank')}
-                 className="w-full bg-slate-800 hover:bg-cyan-600/20 hover:text-cyan-300 border border-slate-700"
+                 className="w-full bg-slate-800 hover:bg-[#01b4e4]/20 hover:text-[#01b4e4] border border-slate-700"
                  icon={<ExternalLink className="w-4 h-4 ml-2" />}
                >
                  فتح الموقع
