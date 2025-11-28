@@ -6,7 +6,10 @@ import { AiMediaResponse } from "../types";
 const mediaResponseSchema: Schema = {
   type: Type.OBJECT,
   properties: {
-    title: { type: Type.STRING, description: "The main title of the movie or series in Arabic or the page language." },
+    title: { type: Type.STRING, description: "The full title of the specific page (e.g. 'Breaking Bad Season 1 Episode 5')." },
+    seriesTitle: { type: Type.STRING, description: "For Series ONLY: The canonical name of the show without season/episode info (e.g. 'Breaking Bad'). Normalize Arabic (e.g. 'أ' -> 'ا')." },
+    seasonNumber: { type: Type.NUMBER, description: "For Series: The season number. Default to 1 if unknown." },
+    episodeNumber: { type: Type.NUMBER, description: "For Series: The episode number." },
     originalTitle: { type: Type.STRING, description: "Original title (e.g. English title) if available." },
     year: { type: Type.STRING, description: "Release year." },
     plot: { type: Type.STRING, description: "A brief summary or plot of the content." },
@@ -64,44 +67,31 @@ export const analyzeHtmlWithGemini = async (htmlContent: string): Promise<AiMedi
 
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
-  // System instruction to guide the model's behavior with AGGRESSIVE IMAGE ANALYSIS
+  // System instruction to guide the model's behavior
   const systemInstruction = `
     You are an expert web scraper and HTML parser specialized in video streaming websites.
     Your task is to analyze the provided raw HTML source code and extract structured metadata.
 
-    ### 1. IMAGE EXTRACTION (AGGRESSIVE MODE)
+    ### 1. TYPE & IDENTIFICATION (CRITICAL)
+    - **Determine Type**: 'Movie' or 'Series'. Look for keywords like "Episode", "Season", "الحلقة", "موسم".
+    - **Series Metadata**: If it is a Series, you MUST extract:
+      1. \`seriesTitle\`: The clean name of the show. REMOVE all season/episode info. Normalize Arabic characters (unify 'أ/إ/آ' to 'ا', 'ة' to 'ه'). Example: "مسلسل المؤسس عثمان الموسم 4 الحلقة 5" -> "المؤسس عثمان". This is CRITICAL for grouping.
+      2. \`seasonNumber\`: The integer of the season.
+      3. \`episodeNumber\`: The integer of the episode.
+
+    ### 2. IMAGE EXTRACTION (AGGRESSIVE MODE)
     Your goal is to extract **EVERY SINGLE** image related to the media content found in the code.
     Populate the 'gallery' array with ALL of them.
 
     **Where to look:**
     1.  **Standard Tags**: \`<img src="..." ...>\`
-    2.  **Lazy Loading (Critical)**: Look for attributes like \`data-src\`, \`data-original\`, \`data-lazy-src\`, \`data-bg\`, \`data-image\`. If found, these are the REAL images.
-    3.  **CSS Backgrounds**: Look for \`style="background-image: url('...')" \` on divs or spans.
-    4.  **Scripts & JSON**: deeply analyze \`<script>\` tags. Websites often store galleries, slider images, and cast photos in JSON objects (e.g., \`"images": ["url1", "url2"]\`). Extract these URLs.
-    5.  **Meta Tags**: \`og:image\`, \`twitter:image\`, \`schema.org\` image fields.
+    2.  **Lazy Loading**: Look for \`data-src\`, \`data-original\`, \`data-lazy-src\`.
+    3.  **Scripts & JSON**: deeply analyze \`<script>\` tags for JSON objects containing image lists.
+    4.  **Meta Tags**: \`og:image\`, \`twitter:image\`.
 
-    **What to collect (Contexts):**
-    -   **Main Poster**: The primary cover.
-    -   **Backdrops/Wallpapers**: Large background images.
-    -   **Episode Thumbnails**: Images for specific episodes.
-    -   **Cast Photos**: Actor portraits.
-    -   **Screenshots**: Stills from the movie/series.
-    -   **Related/Similar**: Thumbnails of other movies suggested in the "You might like" section.
-
-    **What to Ignore:**
-    -   Navigational icons (home, search, user, arrow icons).
-    -   Social media logos (FB, Twitter, etc.).
-    -   Ad banners or tracking pixels.
-    -   Empty or placeholder images (e.g., 'blank.gif').
-
-    ### 2. SERVER & VIDEO SYSTEM
-    - **Watch Servers**: Exhaustively search \`<iframe>\`, \`<button>\` data-attributes, and JavaScript variables (e.g., \`player_url\`).
+    ### 3. SERVER & VIDEO SYSTEM
+    - **Watch Servers**: Exhaustively search \`<iframe>\`, \`<button>\` data-attributes, and JavaScript variables.
     - **Download Links**: Look for \`<a>\` tags with text "Download", "Tahmil", "تحميل".
-    - **Clean URLs**: Remove whitespace. If URL is relative (starts with /), keep it as is.
-
-    ### 3. GENERAL METADATA
-    - Detect Type (Movie/Series) based on keywords "Season", "Episode", "الحلقة", "موسم".
-    - Clean text content (remove "Watch Online", "EgyBest" from titles).
   `;
 
   try {
@@ -110,7 +100,7 @@ export const analyzeHtmlWithGemini = async (htmlContent: string): Promise<AiMedi
       contents: [
         {
           parts: [
-            { text: "Analyze this HTML code using the Aggressive Image Extraction rules and extract metadata:" },
+            { text: "Analyze this HTML code and extract metadata, focusing on correct Series Title grouping and Episode numbering:" },
             // Increase input limit significantly to catch scripts and footers where galleries often live
             { text: htmlContent.substring(0, 800000) } 
           ]
@@ -136,10 +126,13 @@ export const analyzeHtmlWithGemini = async (htmlContent: string): Promise<AiMedi
       throw new Error("Failed to parse AI response as JSON");
     }
 
-    // Safety: Ensure all array fields are arrays to prevent "undefined reading length" errors
+    // Safety: Ensure all array fields are arrays
     const safeResponse: AiMediaResponse = {
       title: parsed.title || "Unknown Title",
       type: parsed.type || "Movie",
+      seriesTitle: parsed.seriesTitle,
+      seasonNumber: parsed.seasonNumber,
+      episodeNumber: parsed.episodeNumber,
       originalTitle: parsed.originalTitle || "",
       year: parsed.year || "",
       plot: parsed.plot || "",

@@ -8,6 +8,9 @@ export interface MediaData {
   id: string;
   originalHtmlInputId: string;
   title: string;
+  seriesTitle?: string; // New: Clean name for grouping (e.g. "Game of Thrones" without S01E01)
+  season?: number;      // New: Explicit season number
+  episode?: number;     // New: Explicit episode number
   type: 'Movie' | 'Series';
   episodeName?: string; // For series
   servers: ServerInfo[];
@@ -42,6 +45,9 @@ export interface AiEpisode {
 export interface AiMediaResponse {
   title: string;
   originalTitle?: string;
+  seriesTitle?: string; // New
+  seasonNumber?: number; // New
+  episodeNumber?: number; // New
   year?: string;
   plot?: string;
   posterUrl?: string;

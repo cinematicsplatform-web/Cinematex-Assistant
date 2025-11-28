@@ -1,3 +1,4 @@
+
 import { MediaData } from '../types';
 
 declare global {
@@ -6,83 +7,201 @@ declare global {
   }
 }
 
+/**
+ * Normalizes text for grouping purposes (Backup if AI seriesTitle is missing).
+ * Handles Arabic character variations (Alif, Yeh, Teh Marbuta) and removes 
+ * Season/Episode specific text to identify the base Series Name.
+ */
+const normalizeForGrouping = (text: string): string => {
+  if (!text) return "";
+  
+  // 1. Lowercase
+  let normalized = text.toLowerCase();
+  
+  // 2. Remove Season/Episode patterns (Arabic & English) to extract base title
+  // Matches: S01, E01, Season 1, Episode 1, موسم 1, الحلقة 1
+  normalized = normalized.replace(/(?:season|موسم|s)\s*\d+/g, '');
+  normalized = normalized.replace(/(?:episode|ep|حلقة|e)\s*\d+/g, '');
+  
+  // 3. Normalize Arabic Characters
+  normalized = normalized.replace(/[أإآ]/g, 'ا'); // Normalize Alifs
+  normalized = normalized.replace(/[ى]/g, 'ي');   // Normalize Yeh
+  normalized = normalized.replace(/ة/g, 'ه');     // Normalize Teh Marbuta
+  
+  // 4. Remove special chars, punctuation, keep Arabic & English letters & numbers
+  normalized = normalized.replace(/[^\w\u0600-\u06FF]/g, ' ');
+  
+  // 5. Collapse multiple spaces
+  return normalized.replace(/\s+/g, ' ').trim();
+};
+
+/**
+ * Parses episode info from text if AI data is missing
+ */
+const parseEpisodeInfoFallback = (title: string, episodeName?: string) => {
+  const fullText = `${title} ${episodeName || ''}`.toLowerCase();
+  
+  const seasonMatch = fullText.match(/(?:season|موسم|s)\s*(\d+)/i);
+  const season = seasonMatch ? parseInt(seasonMatch[1]) : 1; 
+
+  const episodeMatch = fullText.match(/(?:episode|ep|حلقة|e)\s*(\d+)/i);
+  const fallbackMatch = fullText.match(/\s(\d+)$/);
+  
+  const episode = episodeMatch ? parseInt(episodeMatch[1]) : (fallbackMatch ? parseInt(fallbackMatch[1]) : 1);
+
+  return { season, episode };
+};
+
+/**
+ * Cleans the Series Title for the Sheet Name (Human readable)
+ */
+const getCleanSheetName = (title: string): string => {
+  let clean = title.replace(/(?:season|موسم|s)\s*\d+.*$/i, '');
+  clean = clean.replace(/(?:episode|ep|حلقة|e)\s*\d+.*$/i, '');
+  clean = clean.replace(/[:\/\\?*\[\]]/g, ""); 
+  return clean.trim().substring(0, 30) || "Series"; 
+};
+
 export const generateExcelFile = (data: MediaData[]) => {
   if (!window.XLSX) {
     console.error("XLSX library not loaded");
+    alert("مكتبة XLSX غير محملة. تأكد من الاتصال بالإنترنت.");
     return;
   }
 
   const wb = window.XLSX.utils.book_new();
-
-  // Split data into Movies and Series
   const movies = data.filter(d => d.type === 'Movie');
   const series = data.filter(d => d.type === 'Series');
 
-  // --- Prepare Movies Sheet ---
+  // ==========================================
+  // 1. MOVIES SHEET
+  // ==========================================
   if (movies.length > 0) {
     const movieRows = movies.map(m => {
-      const row: any = { 'اسم الفيلم': m.title };
+      const row: any = { 
+        'اسم الفيلم': m.title 
+      };
       
-      // Dynamic Server Columns
-      m.servers.forEach((s, i) => {
-        row[`سيرفر مشاهدة ${i + 1}`] = s.url;
-      });
+      // Fixed 8 Server Columns
+      for (let i = 0; i < 8; i++) {
+        row[`سيرفر ${i + 1}`] = m.servers[i]?.url || "";
+      }
 
-      // Join Download Links
-      row['روابط التحميل'] = m.downloadLinks.map(d => d.url).join(' | ');
+      // Fixed 2 Download Columns
+      for (let i = 0; i < 2; i++) {
+        row[`تحميل ${i + 1}`] = m.downloadLinks[i]?.url || "";
+      }
       
       return row;
     });
 
     const wsMovies = window.XLSX.utils.json_to_sheet(movieRows);
-    
-    // Adjust column widths (Basic heuristic)
-    const wscols = [{ wch: 30 }, { wch: 40 }, { wch: 40 }, { wch: 50 }];
+    const wscols = [{ wch: 30 }, ...Array(8).fill({ wch: 15 }), { wch: 30 }, { wch: 30 }];
     wsMovies['!cols'] = wscols;
 
     window.XLSX.utils.book_append_sheet(wb, wsMovies, "Movies");
   }
 
-  // --- Prepare Series Sheets ---
-  // Group by Series Name (approximated by title sans episode)
-  // For simplicity in this demo, we put all episodes in one "Series" sheet
-  // or create separate sheets if names differ significantly.
-  // The prompt asks for: Each series in a separate Sheet.
+  // ==========================================
+  // 2. SERIES SHEETS (AI-Assisted Grouping)
+  // ==========================================
   
-  // 1. Group by sanitized title (removing episode part)
-  const seriesGroups: Record<string, MediaData[]> = {};
-  
-  series.forEach(s => {
-    // Simple logic to group by the main title part
-    const groupName = s.title.split(/(الحلقة|Episode)/)[0].trim();
-    if (!seriesGroups[groupName]) {
-      seriesGroups[groupName] = [];
+  // Group series
+  const seriesGroups: Record<string, { items: MediaData[], displayTitle: string }> = {};
+
+  series.forEach(item => {
+    // Priority: Use AI-extracted seriesTitle. Fallback to normalized title.
+    // Also normalize the AI title slightly (trim) to be safe.
+    let groupKey = "";
+    let displayTitle = "";
+
+    if (item.seriesTitle) {
+      // AI provided a specific series title. We still run it through normalization
+      // to ensure 'Osman' and 'Osman ' match, or simple Alef diffs if AI slipped up.
+      groupKey = normalizeForGrouping(item.seriesTitle);
+      displayTitle = getCleanSheetName(item.seriesTitle);
+    } else {
+      // Fallback: Regex grouping
+      groupKey = normalizeForGrouping(item.title);
+      displayTitle = getCleanSheetName(item.title);
     }
-    seriesGroups[groupName].push(s);
+    
+    if (!seriesGroups[groupKey]) {
+      seriesGroups[groupKey] = {
+        items: [],
+        displayTitle: displayTitle
+      };
+    }
+    seriesGroups[groupKey].items.push(item);
   });
 
-  Object.entries(seriesGroups).forEach(([seriesName, episodes]) => {
-    // Sanitize sheet name (Excel limit 31 chars, no special chars)
-    let sheetName = seriesName.substring(0, 30).replace(/[:\/\\?*\[\]]/g, "");
-    if (!sheetName) sheetName = "Unknown Series";
+  // Create a sheet for each group
+  Object.values(seriesGroups).forEach(group => {
+    const { items, displayTitle } = group;
 
-    const rows = episodes.map(ep => {
-      const row: any = { 
-        'رقم/اسم الحلقة': ep.episodeName || ep.title 
+    // Prepare rows
+    let processedRows = items.map(item => {
+      // Priority: Use AI-extracted numbers. Fallback to Regex.
+      let season = item.season;
+      let episode = item.episode;
+
+      if (season === undefined || episode === undefined) {
+         const parsed = parseEpisodeInfoFallback(item.title, item.episodeName);
+         if (season === undefined) season = parsed.season;
+         if (episode === undefined) episode = parsed.episode;
+      }
+
+      return {
+        original: item,
+        season: season || 1, // Default to 1 if still null
+        episode: episode || 1
+      };
+    });
+
+    // Sort by Season ASC, then Episode ASC
+    processedRows.sort((a, b) => {
+      if (a.season !== b.season) return a.season - b.season;
+      return a.episode - b.episode;
+    });
+
+    // Map to Excel Row Format
+    const excelRows = processedRows.map(p => {
+      const row: any = {
+        'الموسم': p.season,
+        'الحلقة': p.episode
       };
 
-      ep.servers.forEach((s, i) => {
-        row[`سيرفر مشاهدة ${i + 1}`] = s.url;
-      });
+      for (let i = 0; i < 8; i++) {
+        row[`سيرفر ${i + 1}`] = p.original.servers[i]?.url || "";
+      }
 
-      row['روابط التحميل'] = ep.downloadLinks.map(d => d.url).join(' | ');
+      for (let i = 0; i < 2; i++) {
+        row[`تحميل ${i + 1}`] = p.original.downloadLinks[i]?.url || "";
+      }
+
       return row;
     });
 
-    const wsSeries = window.XLSX.utils.json_to_sheet(rows);
-    window.XLSX.utils.book_append_sheet(wb, wsSeries, sheetName);
+    const wsSeries = window.XLSX.utils.json_to_sheet(excelRows);
+    wsSeries['!cols'] = [{ wch: 8 }, { wch: 8 }, ...Array(8).fill({ wch: 15 }), { wch: 30 }, { wch: 30 }];
+
+    // Handle Sheet Name Uniqueness
+    let sheetName = displayTitle;
+    let counter = 1;
+    // Basic sanitization for sheet name length and chars
+    sheetName = sheetName.replace(/[:\/\\?*\[\]]/g, "").trim().substring(0, 30);
+    if (!sheetName) sheetName = "Series";
+
+    // Ensure unique sheet name in workbook
+    let finalSheetName = sheetName;
+    while (wb.Sheets[finalSheetName]) {
+      // If collision, truncate more to make room for counter
+      finalSheetName = `${sheetName.substring(0, 25)}_${counter}`;
+      counter++;
+    }
+
+    window.XLSX.utils.book_append_sheet(wb, wsSeries, finalSheetName);
   });
 
-  // Write File
   window.XLSX.writeFile(wb, "Cinematex_Export.xlsx");
 };

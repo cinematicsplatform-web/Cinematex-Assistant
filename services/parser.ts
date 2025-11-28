@@ -4,12 +4,11 @@ import { analyzeHtmlWithGemini } from './gemini';
 
 /**
  * Parses a raw HTML string to extract media information.
- * Now uses Google Gemini AI (via analyzeHtmlWithGemini) to ensure high accuracy
- * and consistency with the "Smart Extractor" tool.
+ * Uses Google Gemini AI to ensure high accuracy in metadata and grouping.
  */
 export const parseHtmlContent = async (html: string, inputId: string): Promise<MediaData> => {
   try {
-    // Leverage the AI service for parsing instead of brittle DOM manipulation
+    // Leverage the AI service for parsing
     const aiData = await analyzeHtmlWithGemini(html);
 
     // Map AI Watch Servers to ServerInfo
@@ -27,17 +26,16 @@ export const parseHtmlContent = async (html: string, inputId: string): Promise<M
     // Logic to determine specific episode name for Series
     let episodeName = '';
     if (aiData.type === 'Series') {
-      // 1. Try to extract "Episode X" from the main title
-      const titleMatch = aiData.title.match(/(?:الحلقة|Episode)\s+(\d+)/i);
-      
-      if (titleMatch) {
-        episodeName = titleMatch[0];
-      } else if (aiData.episodes && aiData.episodes.length === 1) {
-        // 2. If the AI found exactly one episode listed (often the current one), use that
-        episodeName = `Episode ${aiData.episodes[0].number}`;
+      if (aiData.episodeNumber) {
+        episodeName = `Episode ${aiData.episodeNumber}`;
       } else {
-        // 3. Fallback: Use the full title which often contains the episode info
-        episodeName = aiData.title;
+        // Fallback checks
+        const titleMatch = aiData.title.match(/(?:الحلقة|Episode)\s+(\d+)/i);
+        if (titleMatch) {
+          episodeName = titleMatch[0];
+        } else {
+          episodeName = aiData.title;
+        }
       }
     }
 
@@ -45,6 +43,10 @@ export const parseHtmlContent = async (html: string, inputId: string): Promise<M
       id: Math.random().toString(36).substr(2, 9),
       originalHtmlInputId: inputId,
       title: aiData.title,
+      // Pass the specific AI-extracted grouping and sorting info
+      seriesTitle: aiData.seriesTitle,
+      season: aiData.seasonNumber,
+      episode: aiData.episodeNumber,
       type: aiData.type,
       episodeName: episodeName,
       servers: servers,
@@ -54,7 +56,7 @@ export const parseHtmlContent = async (html: string, inputId: string): Promise<M
   } catch (error) {
     console.error("AI Parsing Error in Batch Extractor:", error);
     
-    // Return a fallback object so the entire batch process doesn't crash
+    // Return a fallback object
     return {
       id: Math.random().toString(36).substr(2, 9),
       originalHtmlInputId: inputId,
