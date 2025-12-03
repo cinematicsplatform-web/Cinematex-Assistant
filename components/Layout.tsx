@@ -1,5 +1,7 @@
+
+
 import React from 'react';
-import { Film, Menu, X, Bot, ExternalLink } from 'lucide-react';
+import { Film, Menu, X, Bot, ExternalLink, RefreshCw, BookOpen, Settings } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { cn } from '../lib/utils';
 
@@ -14,7 +16,9 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const navItems = [
     { name: 'الرئيسية', path: '/' },
     { name: 'المحلل الذكي (AI)', path: '/ai-extractor' },
+    { name: 'الناسخ الجماعي', path: '/cloner' },
     { name: 'مستخرج الإكسيل', path: '/extractor' },
+    { name: 'دليل الاستخدام', path: '/guide' },
     { name: 'موسوعة TMDB', path: 'https://www.themoviedb.org/', external: true },
   ];
 
@@ -40,7 +44,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
             </Link>
 
             {/* Desktop Menu */}
-            <div className="hidden md:flex items-center space-x-6 space-x-reverse">
+            <div className="hidden md:flex items-center space-x-4 space-x-reverse">
               {navItems.map((item) => (
                 item.external ? (
                   <a
@@ -65,14 +69,37 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
                     )}
                   >
                     {item.path === '/ai-extractor' && <Bot className="w-4 h-4" />}
+                    {item.path === '/cloner' && <RefreshCw className="w-4 h-4" />}
+                    {item.path === '/guide' && <BookOpen className="w-4 h-4" />}
                     {item.name}
                   </Link>
                 )
               ))}
+              
+              {/* Settings Icon (Desktop) */}
+              <div className="h-6 w-px bg-white/10 mx-2" />
+              <Link
+                to="/settings"
+                className={cn(
+                  "p-2 rounded-full transition-colors",
+                  location.pathname === '/settings'
+                    ? "bg-white/10 text-white"
+                    : "text-slate-400 hover:text-white hover:bg-white/5"
+                )}
+                title="الإعدادات"
+              >
+                <Settings className="w-5 h-5" />
+              </Link>
             </div>
 
             {/* Mobile Menu Button */}
-            <div className="md:hidden">
+            <div className="md:hidden flex items-center gap-2">
+              <Link
+                to="/settings"
+                className="p-2 rounded-md text-slate-400 hover:text-white hover:bg-white/10"
+              >
+                <Settings className="w-5 h-5" />
+              </Link>
               <button
                 onClick={() => setIsMenuOpen(!isMenuOpen)}
                 className="p-2 rounded-md text-slate-400 hover:text-white hover:bg-white/10"
@@ -116,6 +143,19 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
                   </Link>
                 )
               ))}
+              <Link
+                to="/settings"
+                onClick={() => setIsMenuOpen(false)}
+                className={cn(
+                  "flex items-center gap-2 px-3 py-2 rounded-md text-base font-medium",
+                  location.pathname === '/settings'
+                    ? "bg-indigo-600/20 text-indigo-300"
+                    : "text-slate-400 hover:text-white hover:bg-white/5"
+                )}
+              >
+                الإعدادات
+                <Settings className="w-4 h-4" />
+              </Link>
             </div>
           </div>
         )}

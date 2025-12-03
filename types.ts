@@ -1,4 +1,5 @@
 
+
 export interface ServerInfo {
   name: string;
   url: string;
@@ -26,6 +27,14 @@ export interface LogEntry {
   timestamp: string;
   message: string;
   type: 'info' | 'success' | 'error';
+}
+
+// --- App Settings Types ---
+
+export interface AppSettings {
+  uqloadApiKey: string;
+  filenamePrefix: string;
+  ignoredKeywords: string[]; // List of words to remove from filenames (e.g. EgyBest)
 }
 
 // --- AI Extractor Types ---
@@ -59,4 +68,16 @@ export interface AiMediaResponse {
   downloadLinks: { name: string; url: string; quality?: string }[];
   episodes?: AiEpisode[];
   gallery?: string[];
+}
+
+// --- Mass Cloner Types ---
+
+export interface CloneResult {
+  id: string;
+  originalUrl: string;
+  status: 'pending' | 'success' | 'failed' | 'skipped';
+  newCode?: string;
+  watchUrl?: string;
+  downloadUrl?: string;
+  message?: string;
 }

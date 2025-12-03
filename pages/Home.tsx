@@ -2,7 +2,7 @@ import React from 'react';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { useNavigate } from 'react-router-dom';
-import { Bot, FileSpreadsheet, Zap, ArrowRight, ExternalLink } from 'lucide-react';
+import { Bot, FileSpreadsheet, Zap, ArrowRight, ExternalLink, RefreshCw } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 export const Home: React.FC = () => {
@@ -42,9 +42,9 @@ export const Home: React.FC = () => {
       </div>
 
       {/* Feature Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full max-w-7xl px-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-4 gap-6 w-full max-w-7xl px-4">
         
-        {/* Tool 1: AI Extractor (New) */}
+        {/* Tool 1: AI Extractor */}
         <motion.div
            initial={{ opacity: 0, x: 20 }}
            animate={{ opacity: 1, x: 0 }}
@@ -60,7 +60,7 @@ export const Home: React.FC = () => {
                </div>
                <h3 className="text-2xl font-bold text-white mb-2">محلل المحتوى الذكي</h3>
                <p className="text-slate-400 text-sm mb-6 flex-1">
-                 استخراج بيانات كاملة (قصة، بوستر، ممثلين، سيرفرات) من كود HTML باستخدام Gemini 2.5 Flash وعرضها بشكل منظم.
+                 استخراج بيانات كاملة من كود HTML باستخدام Gemini 2.5 Flash.
                </p>
                <Button 
                  onClick={() => navigate('/ai-extractor')}
@@ -73,11 +73,37 @@ export const Home: React.FC = () => {
           </Card>
         </motion.div>
 
-        {/* Tool 2: Excel Extractor (Existing) */}
+        {/* Tool 2: Mass Cloner (New) */}
         <motion.div
-           initial={{ opacity: 0, x: -20 }}
+           initial={{ opacity: 0, x: 10 }}
            animate={{ opacity: 1, x: 0 }}
            transition={{ delay: 0.4 }}
+        >
+          <Card className="h-full group hover:border-cyan-500/40 hover:bg-slate-800/80 transition-all duration-300">
+             <div className="flex flex-col items-start text-right h-full p-2">
+               <div className="p-3 rounded-xl bg-cyan-500/10 text-cyan-400 mb-4 group-hover:scale-110 transition-transform">
+                 <RefreshCw className="w-8 h-8" />
+               </div>
+               <h3 className="text-2xl font-bold text-white mb-2">الناسخ الجماعي</h3>
+               <p className="text-slate-400 text-sm mb-6 flex-1">
+                 نسخ ملفات Uqload من روابط خارجية لحسابك دفعة واحدة وتصديرها.
+               </p>
+               <Button 
+                 onClick={() => navigate('/cloner')}
+                 className="w-full bg-slate-800 hover:bg-cyan-600/20 hover:text-cyan-300 border border-slate-700"
+                 icon={<ArrowRight className="w-4 h-4 ml-2" />}
+               >
+                 فتح الأداة
+               </Button>
+             </div>
+          </Card>
+        </motion.div>
+
+        {/* Tool 3: Excel Extractor */}
+        <motion.div
+           initial={{ opacity: 0, x: -10 }}
+           animate={{ opacity: 1, x: 0 }}
+           transition={{ delay: 0.5 }}
         >
           <Card className="h-full group hover:border-indigo-500/40 hover:bg-slate-800/80 transition-all duration-300">
              <div className="flex flex-col items-start text-right h-full p-2">
@@ -86,7 +112,7 @@ export const Home: React.FC = () => {
                </div>
                <h3 className="text-2xl font-bold text-white mb-2">مستخرج الإكسيل</h3>
                <p className="text-slate-400 text-sm mb-6 flex-1">
-                 أداة سريعة لمعالجة كميات كبيرة من الأكواد واستخراج روابط السيرفرات وتصديرها مباشرة إلى ملف Excel منظم.
+                 استخراج روابط السيرفرات من الأكواد وتصديرها لملف Excel.
                </p>
                <Button 
                  onClick={() => navigate('/extractor')}
@@ -99,11 +125,11 @@ export const Home: React.FC = () => {
           </Card>
         </motion.div>
 
-        {/* Tool 3: TMDB External Link */}
+        {/* Tool 4: TMDB */}
         <motion.div
-           initial={{ opacity: 0, y: 20 }}
-           animate={{ opacity: 1, y: 0 }}
-           transition={{ delay: 0.5 }}
+           initial={{ opacity: 0, x: -20 }}
+           animate={{ opacity: 1, x: 0 }}
+           transition={{ delay: 0.6 }}
         >
           <Card className="h-full group hover:border-[#01b4e4]/40 hover:bg-slate-800/80 transition-all duration-300">
              <div className="flex flex-col items-start text-right h-full p-2">
@@ -116,7 +142,7 @@ export const Home: React.FC = () => {
                </div>
                <h3 className="text-2xl font-bold text-white mb-2">موسوعة TMDB</h3>
                <p className="text-slate-400 text-sm mb-6 flex-1">
-                 الوصول السريع إلى قاعدة بيانات الأفلام العالمية (The Movie Database) للبحث عن المعلومات والصور.
+                 الوصول السريع إلى قاعدة بيانات الأفلام العالمية للبحث عن المعلومات.
                </p>
                <Button 
                  onClick={() => window.open('https://www.themoviedb.org/', '_blank')}
@@ -135,7 +161,7 @@ export const Home: React.FC = () => {
       <motion.div 
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ delay: 0.6 }}
+        transition={{ delay: 0.7 }}
         className="grid grid-cols-3 gap-8 text-center pt-8 border-t border-white/5 w-full max-w-2xl"
       >
         <div>

@@ -1,5 +1,5 @@
 
-import { MediaData } from '../types';
+import { MediaData, CloneResult } from '../types';
 
 declare global {
   interface Window {
@@ -204,4 +204,73 @@ export const generateExcelFile = (data: MediaData[]) => {
   });
 
   window.XLSX.writeFile(wb, "Cinematex_Export.xlsx");
+};
+
+/**
+ * Generates Excel for Mass Link Cloner results
+ * Strict Format Requirements:
+ * 1. Headers: url, downloadUrl, quality, original_source (Lower case, exact)
+ * 2. Row Order: Must match input order strictly (Row 1 = Ep 1). Do not filter failed items.
+ */
+export const generateClonerExcel = (results: CloneResult[]) => {
+  if (!window.XLSX) {
+    console.error("XLSX library not loaded");
+    alert("مكتبة XLSX غير محملة. تأكد من الاتصال بالإنترنت.");
+    return;
+  }
+
+  const wb = window.XLSX.utils.book_new();
+
+  // We map ALL results to ensure the row index matches the episode index.
+  // If a link failed, the new URLs will be empty, but the row will exist.
+  const rows = results.map(r => ({
+    url: r.watchUrl || "",
+    downloadUrl: r.downloadUrl || "",
+    quality: "HD",
+    original_source: r.originalUrl || ""
+  }));
+
+  const ws = window.XLSX.utils.json_to_sheet(rows);
+  
+  // Adjust column widths
+  const wscols = [
+    { wch: 50 }, // url
+    { wch: 50 }, // downloadUrl
+    { wch: 10 }, // quality
+    { wch: 50 }  // original_source
+  ];
+  ws['!cols'] = wscols;
+
+  window.XLSX.utils.book_append_sheet(wb, ws, "ClonedLinks");
+  window.XLSX.writeFile(wb, `Uqload_Clone_${new Date().getTime()}.xlsx`);
+};
+
+/**
+ * Generates Excel for Last 30 Uploads History
+ * Columns: A=url, B=downloadUrl, C=name
+ */
+export const generateHistoryExcel = (data: {url: string, downloadUrl: string, name: string}[]) => {
+  if (!window.XLSX) {
+    console.error("XLSX library not loaded");
+    alert("مكتبة XLSX غير محملة.");
+    return;
+  }
+
+  const wb = window.XLSX.utils.book_new();
+
+  // Create sheet with specific headers to ensure order A, B, C
+  const ws = window.XLSX.utils.json_to_sheet(data, { 
+    header: ["url", "downloadUrl", "name"], 
+    skipHeader: false 
+  });
+
+  // Adjust column widths
+  ws['!cols'] = [
+    { wch: 50 }, // url
+    { wch: 50 }, // downloadUrl
+    { wch: 40 }  // name
+  ];
+
+  window.XLSX.utils.book_append_sheet(wb, ws, "Last30Uploads");
+  window.XLSX.writeFile(wb, "Cinematics_Recent_Uploads.xlsx");
 };
