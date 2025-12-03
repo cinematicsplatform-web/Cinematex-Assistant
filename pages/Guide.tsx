@@ -106,7 +106,7 @@ export const Guide: React.FC = () => {
                 <li>إزالة أسماء المنافسين: [EgyBest], Cima4u, Akwam, Cima Now CoM, etc.</li>
                 <li>إزالة الأقواس والرموز الزائدة.</li>
                 <li>إضافة بادئة <b>Cinematix_</b> لتوحيد الهوية.</li>
-                <li className="text-green-400 mt-1">مثال: [EgyBest] Spider-Man -> Cinematix_Spider-Man</li>
+                <li className="text-green-400 mt-1">مثال: [EgyBest] Spider-Man &rarr; Cinematix_Spider-Man</li>
               </ul>
             </div>
             
