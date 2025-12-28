@@ -1,3 +1,4 @@
+
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 
@@ -16,10 +17,33 @@ const PROXIES = [
   'https://corsproxy.io/?',
   'https://api.allorigins.win/raw?url=',
   'https://api.codetabs.com/v1/proxy?url=',
-  'https://proxy.cors.sh/', // قد يتطلب مفتاحاً ولكن يعمل أحياناً بدونه
+  'https://proxy.cors.sh/', 
 ];
 
 export const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+/**
+ * Concurrency helper to process an array of items with a limited number of parallel workers.
+ */
+export async function concurrentMap<T, R>(
+  items: T[],
+  concurrency: number,
+  fn: (item: T, index: number) => Promise<R>
+): Promise<R[]> {
+  const results: R[] = new Array(items.length);
+  let currentIndex = 0;
+
+  const runWorker = async () => {
+    while (currentIndex < items.length) {
+      const index = currentIndex++;
+      results[index] = await fn(items[index], index);
+    }
+  };
+
+  const workers = Array.from({ length: Math.min(concurrency, items.length) }, runWorker);
+  await Promise.all(workers);
+  return results;
+}
 
 /**
  * جلب محتوى HTML مع تدوير البروكسيات وإدارة محاولات الإعادة بشكل ذكي
@@ -34,7 +58,7 @@ export async function fetchHtmlWithProxy(url: string, retryCount = 0): Promise<s
   try {
     // إضافة تأخير تصاعدي عند إعادة المحاولة لتجنب الـ Rate Limiting
     if (retryCount > 0) {
-      await sleep(retryCount * 1000);
+      await sleep(retryCount * 500); // Reduced from 1000 for speed
     }
 
     const response = await fetch(proxyUrl, {
@@ -44,12 +68,10 @@ export async function fetchHtmlWithProxy(url: string, retryCount = 0): Promise<s
         'Cache-Control': 'no-cache',
         'Pragma': 'no-cache',
       },
-      // محاولة ضبط وضع الـ cache لتجنب النتائج القديمة أو المحظورة
       cache: 'no-store'
     });
 
     if (!response.ok) {
-      // إذا كان الخطأ 403، فالموقع غالباً يحظر البروكسي الحالي، نجرب البروكسي التالي فوراً
       if (response.status === 403 || response.status === 429) {
         if (retryCount < PROXIES.length * 2) {
           console.warn(`Proxy ${proxy} blocked with ${response.status}. Trying next...`);
@@ -62,7 +84,6 @@ export async function fetchHtmlWithProxy(url: string, retryCount = 0): Promise<s
 
     const html = await response.text();
     
-    // التحقق من أن الـ HTML المستلم ليس صفحة خطأ من البروكسي نفسه
     if (!html || html.length < 200 || html.includes('Cloudflare') || html.includes('Access Denied')) {
       if (retryCount < PROXIES.length * 2) {
          return fetchHtmlWithProxy(cleanUrl, retryCount + 1);

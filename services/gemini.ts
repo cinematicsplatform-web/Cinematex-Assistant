@@ -1,3 +1,4 @@
+
 import { GoogleGenAI, Type } from "@google/genai";
 import { AiMediaResponse, ListingExtractionResponse } from "../types";
 
@@ -81,7 +82,7 @@ const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 export const analyzeHtmlWithGemini = async (htmlContent: string, isSpecialPage: boolean = false, retryCount = 0): Promise<AiMediaResponse> => {
   if (!process.env.API_KEY) {
-    throw new Error("API Key is missing");
+    throw new Error("API Key is missing from environment (GEMINI_API_KEY)");
   }
 
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
@@ -117,15 +118,14 @@ export const analyzeHtmlWithGemini = async (htmlContent: string, isSpecialPage: 
     return JSON.parse(jsonStr.trim());
 
   } catch (error: any) {
-    // Handle 429 Quota Exceeded error with retries
     if (error?.message?.includes('429') || error?.message?.includes('RESOURCE_EXHAUSTED')) {
       if (retryCount < 3) {
-        const delay = (retryCount + 1) * 3000; // 3s, 6s, 9s delay
+        const delay = (retryCount + 1) * 2000; // Optimized delay
         console.warn(`Gemini Quota limit hit. Retrying in ${delay/1000}s... (Attempt ${retryCount + 1})`);
         await wait(delay);
         return analyzeHtmlWithGemini(htmlContent, isSpecialPage, retryCount + 1);
       }
-      throw new Error("لقد تجاوزت حصة الاستخدام المجانية لـ Gemini (429 Quota Exceeded). يرجى المحاولة مرة أخرى بعد دقيقة أو استخدام مفتاح API مدفوع.");
+      throw new Error("لقد تجاوزت حصة الاستخدام المجانية لـ Gemini (429 Quota Exceeded). يرجى المحاولة مرة أخرى بعد دقيقة.");
     }
     
     console.error("Gemini Analysis Failed:", error);
@@ -135,7 +135,7 @@ export const analyzeHtmlWithGemini = async (htmlContent: string, isSpecialPage: 
 
 export const extractLinksFromListing = async (htmlContent: string, retryCount = 0): Promise<ListingExtractionResponse> => {
   if (!process.env.API_KEY) {
-    throw new Error("API Key is missing");
+    throw new Error("API Key is missing from environment (GEMINI_API_KEY)");
   }
 
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
@@ -164,12 +164,12 @@ export const extractLinksFromListing = async (htmlContent: string, retryCount = 
   } catch (error: any) {
     if (error?.message?.includes('429') || error?.message?.includes('RESOURCE_EXHAUSTED')) {
       if (retryCount < 3) {
-        const delay = (retryCount + 1) * 3000;
+        const delay = (retryCount + 1) * 2000;
         console.warn(`Gemini Listing Quota limit hit. Retrying in ${delay/1000}s...`);
         await wait(delay);
         return extractLinksFromListing(htmlContent, retryCount + 1);
       }
-      throw new Error("تجاوزت حصة الاستخدام لـ Gemini أثناء تحليل روابط القسم. يرجى الانتظار قليلاً.");
+      throw new Error("تجاوزت حصة الاستخدام لـ Gemini أثناء تحليل روابط القسم.");
     }
     console.error("Gemini Listing Analysis Failed:", error);
     throw error;

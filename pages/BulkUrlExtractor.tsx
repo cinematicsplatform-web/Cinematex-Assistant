@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -24,7 +25,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { analyzeHtmlWithGemini } from '../services/gemini';
-import { fetchHtmlWithProxy, generateId, sleep } from '../lib/utils';
+import { fetchHtmlWithProxy, generateId, sleep, concurrentMap } from '../lib/utils';
 import { AiMediaResponse } from '../types';
 import { cn } from '../lib/utils';
 import { generateExcelFile } from '../services/excel';
@@ -84,34 +85,43 @@ export const BulkUrlExtractor: React.FC = () => {
     const html = await fetchHtmlWithProxy(url);
     const result = await analyzeHtmlWithGemini(html);
     
+    const secondaryTasks: Promise<void>[] = [];
+
     // تتبع صفحة المشغل إذا وجدت
     if (result.watchPageUrl || result.watchServers.length === 0) {
         const playerUrl = result.watchPageUrl || url;
-        if (result.watchPageUrl || result.watchServers.length === 0) {
-            try {
-                const watchHtml = await fetchHtmlWithProxy(playerUrl);
-                const watchResult = await analyzeHtmlWithGemini(watchHtml, true);
-                if (watchResult.watchServers && watchResult.watchServers.length > 0) {
-                    result.watchServers = watchResult.watchServers;
-                }
-            } catch (wErr) {
-                console.warn("Bulk: Failed player page", url, wErr);
-            }
-        }
+        secondaryTasks.push((async () => {
+          try {
+              const watchHtml = await fetchHtmlWithProxy(playerUrl);
+              const watchResult = await analyzeHtmlWithGemini(watchHtml, true);
+              if (watchResult.watchServers && watchResult.watchServers.length > 0) {
+                  result.watchServers = watchResult.watchServers;
+              }
+          } catch (wErr) {
+              console.warn("Bulk: Failed player page", url, wErr);
+          }
+        })());
     }
 
     // تتبع صفحة التحميل إذا وجدت
     if (result.downloadPageUrl && (!result.downloadLinks || result.downloadLinks.length < 2)) {
-      try {
-        const downloadHtml = await fetchHtmlWithProxy(result.downloadPageUrl);
-        const downloadResult = await analyzeHtmlWithGemini(downloadHtml, true);
-        if (downloadResult.downloadLinks && downloadResult.downloadLinks.length > 0) {
-          result.downloadLinks = [...(result.downloadLinks || []), ...downloadResult.downloadLinks];
+      secondaryTasks.push((async () => {
+        try {
+          const downloadHtml = await fetchHtmlWithProxy(result.downloadPageUrl);
+          const downloadResult = await analyzeHtmlWithGemini(downloadHtml, true);
+          if (downloadResult.downloadLinks && downloadResult.downloadLinks.length > 0) {
+            result.downloadLinks = [...(result.downloadLinks || []), ...downloadResult.downloadLinks];
+          }
+        } catch (dlErr) {
+          console.warn("Bulk: Failed download page", url, dlErr);
         }
-      } catch (dlErr) {
-        console.warn("Bulk: Failed download page", url, dlErr);
-      }
+      })());
     }
+
+    if (secondaryTasks.length > 0) {
+      await Promise.all(secondaryTasks);
+    }
+
     return result;
   };
 
@@ -126,29 +136,42 @@ export const BulkUrlExtractor: React.FC = () => {
     setError(null);
     setResults([]); 
     setProgress({ current: 0, total: urls.length });
-    const newResults: ExtractionResult[] = [];
 
-    for (let i = 0; i < urls.length; i++) {
-      const url = urls[i];
-      try {
-        // إضافة تأخير بين الطلبات لتجنب Quota Limit
-        if (i > 0) await sleep(2000); 
-
-        const res = await processSingleUrl(url);
-        newResults.push({ data: res, originalUrl: url, id: generateId() });
-      } catch (err: any) {
-        console.error("Error processing URL:", url, err);
-        let errorMsg = err.message || 'فشل جلب البيانات';
-        if (errorMsg.includes('429') || errorMsg.includes('Quota')) {
-          errorMsg = "تجاوزت حد Gemini. يرجى الانتظار دقيقة.";
+    try {
+      // Use concurrentMap with concurrency level 3 to speed up extraction while avoiding 429s
+      // Explicitly providing type parameters to concurrentMap ensures 'url' is correctly inferred as string
+      const finalResults = await concurrentMap<string, ExtractionResult>(urls, 3, async (url, index) => {
+        try {
+          // Small staggered start to help the API breathe
+          if (index > 0 && index < 3) await sleep(500);
+          
+          const res = await processSingleUrl(url);
+          const resultObj: ExtractionResult = { data: res, originalUrl: url, id: generateId() };
+          
+          // Update partial results to show progress to user
+          setResults(prev => [...prev, resultObj]);
+          setProgress(prev => ({ ...prev, current: prev.current + 1 }));
+          
+          return resultObj;
+        } catch (err: any) {
+          console.error("Error processing URL:", url, err);
+          let errorMsg = err.message || 'فشل جلب البيانات';
+          if (errorMsg.includes('429') || errorMsg.includes('Quota')) {
+            errorMsg = "تجاوزت حد Gemini. يرجى الانتظار دقيقة.";
+          }
+          const errorObj: ExtractionResult = { error: errorMsg, originalUrl: url, id: generateId() };
+          setResults(prev => [...prev, errorObj]);
+          setProgress(prev => ({ ...prev, current: prev.current + 1 }));
+          return errorObj;
         }
-        newResults.push({ error: errorMsg, originalUrl: url, id: generateId() });
-      }
-      setProgress(prev => ({ ...prev, current: i + 1 }));
-    }
+      });
 
-    setResults(newResults);
-    setIsProcessing(false);
+      setResults(finalResults);
+    } catch (globalErr: any) {
+      setError(globalErr.message || "حدث خطأ غير متوقع");
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const resetExtractor = () => {
@@ -196,9 +219,9 @@ export const BulkUrlExtractor: React.FC = () => {
         <div className="inline-flex items-center justify-center p-4 bg-gradient-to-br from-indigo-500/20 to-purple-500/20 rounded-2xl mb-4 border border-indigo-500/30">
           <Layers className="w-12 h-12 text-indigo-400" />
         </div>
-        <h1 className="text-4xl font-bold text-white">المستورد الجماعي الشامل</h1>
+        <h1 className="text-4xl font-bold text-white">المستورد الجماعي السريع</h1>
         <p className="text-slate-400 max-w-2xl mx-auto">
-          أدخل روابط الأفلام أو الحلقات، وسيقوم النظام بتتبع صفحات المشغل وصفحات التحميل لكل عنصر آلياً.
+          أدخل روابط الأفلام أو الحلقات، وسيقوم النظام بمعالجة روابط متعددة في وقت واحد لضمان أقصى سرعة.
         </p>
       </div>
 
@@ -263,9 +286,9 @@ export const BulkUrlExtractor: React.FC = () => {
                 <Button 
                   onClick={handleStartProcess} 
                   className="w-full py-4 text-xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 shadow-xl shadow-indigo-900/20"
-                  icon={<Play className="w-6 h-6 ml-2" />}
+                  icon={<Zap className="w-6 h-6 ml-2" />}
                 >
-                  بدء الاستخراج الجماعي
+                  بدء الاستخراج السريع (Turbo Mode)
                 </Button>
               </div>
             </div>
@@ -276,10 +299,13 @@ export const BulkUrlExtractor: React.FC = () => {
       {/* Processing Phase */}
       {isProcessing && (
         <div className="flex flex-col items-center justify-center py-20 bg-slate-900/40 rounded-3xl border border-indigo-500/20">
-           <div className="w-16 h-16 rounded-full border-4 border-indigo-500/20 border-t-indigo-500 animate-spin mb-6" />
+           <div className="relative mb-6">
+              <div className="w-20 h-20 rounded-full border-4 border-indigo-500/20 border-t-indigo-500 animate-spin" />
+              <Zap className="absolute inset-0 m-auto w-8 h-8 text-indigo-400 animate-pulse" />
+           </div>
            <div className="text-center space-y-4">
-             <h3 className="text-2xl font-bold text-white">جاري معالجة الروابط</h3>
-             <p className="text-slate-400">يتم تتبع المشغلات وصفحات التحميل لكل رابط آلياً لضمان الحصول على السيرفرات النهائية...</p>
+             <h3 className="text-2xl font-bold text-white">جاري المعالجة المتوازية</h3>
+             <p className="text-slate-400">نقوم بتحليل روابط متعددة في وقت واحد لتسريع العملية...</p>
              <div className="flex items-center gap-3 justify-center text-indigo-400 font-bold text-xl">
                <Globe className="w-6 h-6 animate-pulse" />
                <span>{progress.current} / {progress.total}</span>
@@ -305,7 +331,7 @@ export const BulkUrlExtractor: React.FC = () => {
             <div className="flex items-center gap-4">
               <span className="text-emerald-400 font-bold flex items-center gap-2 bg-emerald-500/10 px-4 py-2 rounded-full">
                 <CheckCircle2 className="w-5 h-5" />
-                تمت معالجة {results.length} روابط
+                اكتملت معالجة {results.length} روابط
               </span>
               {results.some(r => r.data) && (
                 <Button 
@@ -336,12 +362,12 @@ export const BulkUrlExtractor: React.FC = () => {
                           {idx + 1}
                         </div>
                         <div>
-                          <h3 className="text-red-400 font-bold">فشل الاستخراج الآلي</h3>
+                          <h3 className="text-red-400 font-bold">فشل الاستخراج</h3>
                           <p className="text-xs text-slate-500 truncate max-w-md dir-ltr text-left">{result.originalUrl}</p>
                         </div>
                       </div>
                       <button 
-                        onClick={() => setResults(results.filter((_, i) => i !== idx))}
+                        onClick={() => setResults(results.filter((r) => r.id !== result.id))}
                         className="text-slate-500 hover:text-red-400"
                       >
                         <X className="w-5 h-5" />
@@ -369,7 +395,7 @@ export const BulkUrlExtractor: React.FC = () => {
                         </div>
                       </div>
                       <button 
-                        onClick={() => setResults(results.filter((_, i) => i !== idx))}
+                        onClick={() => setResults(results.filter((r) => r.id !== result.id))}
                         className="p-2 text-slate-500 hover:text-red-400 transition-colors"
                       >
                         <X className="w-6 h-6" />

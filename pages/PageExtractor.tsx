@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -16,11 +17,12 @@ import {
   Globe,
   Loader2,
   Zap,
-  LayoutGrid
+  LayoutGrid,
+  RefreshCw
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { analyzeHtmlWithGemini, extractLinksFromListing } from '../services/gemini';
-import { fetchHtmlWithProxy, generateId, sleep } from '../lib/utils';
+import { fetchHtmlWithProxy, generateId, sleep, concurrentMap } from '../lib/utils';
 import { AiMediaResponse } from '../types';
 import { cn } from '../lib/utils';
 import { generateExcelFile } from '../services/excel';
@@ -55,28 +57,39 @@ export const PageExtractor: React.FC = () => {
     const html = await fetchHtmlWithProxy(url);
     const result = await analyzeHtmlWithGemini(html);
     
+    const secondaryTasks: Promise<void>[] = [];
+
     // Check for watch page
     if (result.watchPageUrl || (!result.watchServers || result.watchServers.length === 0)) {
         const playerUrl = result.watchPageUrl || url;
-        try {
-            const watchHtml = await fetchHtmlWithProxy(playerUrl);
-            const watchResult = await analyzeHtmlWithGemini(watchHtml, true);
-            if (watchResult.watchServers && watchResult.watchServers.length > 0) {
-                result.watchServers = watchResult.watchServers;
-            }
-        } catch (e) { console.warn("Sub-page fetch failed", e); }
+        secondaryTasks.push((async () => {
+            try {
+                const watchHtml = await fetchHtmlWithProxy(playerUrl);
+                const watchResult = await analyzeHtmlWithGemini(watchHtml, true);
+                if (watchResult.watchServers && watchResult.watchServers.length > 0) {
+                    result.watchServers = watchResult.watchServers;
+                }
+            } catch (e) { console.warn("Sub-page fetch failed", e); }
+        })());
     }
 
     // Check for download page
     if (result.downloadPageUrl && (!result.downloadLinks || result.downloadLinks.length < 2)) {
-      try {
-        const dlHtml = await fetchHtmlWithProxy(result.downloadPageUrl);
-        const dlResult = await analyzeHtmlWithGemini(dlHtml, true);
-        if (dlResult.downloadLinks && dlResult.downloadLinks.length > 0) {
-          result.downloadLinks = [...(result.downloadLinks || []), ...dlResult.downloadLinks];
-        }
-      } catch (e) { console.warn("DL-page fetch failed", e); }
+      secondaryTasks.push((async () => {
+          try {
+            const dlHtml = await fetchHtmlWithProxy(result.downloadPageUrl);
+            const dlResult = await analyzeHtmlWithGemini(dlHtml, true);
+            if (dlResult.downloadLinks && dlResult.downloadLinks.length > 0) {
+              result.downloadLinks = [...(result.downloadLinks || []), ...dlResult.downloadLinks];
+            }
+          } catch (e) { console.warn("DL-page fetch failed", e); }
+      })());
     }
+
+    if (secondaryTasks.length > 0) {
+      await Promise.all(secondaryTasks);
+    }
+
     return result;
   };
 
@@ -113,15 +126,13 @@ export const PageExtractor: React.FC = () => {
       }));
       setResults(initialTasks);
 
-      // Process sequentially to avoid heavy load
-      for (let i = 0; i < initialTasks.length; i++) {
-        const task = initialTasks[i];
-        
+      // Speed up by using parallel concurrency
+      await concurrentMap(initialTasks, 3, async (task, index) => {
         setResults(prev => prev.map(t => t.id === task.id ? { ...t, status: 'processing' } : t));
 
         try {
-          // تأخير إجباري بين العناصر لتجنب 429 Error
-          if (i > 0) await sleep(2500);
+          // Subtle staggered start
+          if (index > 0 && index < 3) await sleep(500);
 
           const data = await processSingleMovie(task.url);
           setResults(prev => prev.map(t => t.id === task.id ? { ...t, data, status: 'success' } : t));
@@ -132,7 +143,7 @@ export const PageExtractor: React.FC = () => {
           }
           setResults(prev => prev.map(t => t.id === task.id ? { ...t, status: 'failed', error: errorMsg } : t));
         }
-      }
+      });
 
     } catch (err: any) {
       setError(err.message || 'حدث خطأ أثناء معالجة الصفحة');
@@ -143,7 +154,7 @@ export const PageExtractor: React.FC = () => {
   };
 
   const exportAll = () => {
-    const successData = results.filter(r => r.data).map(r => r.data!);
+    const successData = results.filter(r => r.status === 'success' && r.data).map(r => r.data!);
     if (successData.length === 0) return;
     
     const mediaItems = successData.map(r => ({
@@ -175,9 +186,9 @@ export const PageExtractor: React.FC = () => {
         <div className="inline-flex items-center justify-center p-4 bg-gradient-to-br from-indigo-500/20 to-emerald-500/20 rounded-2xl mb-4 border border-indigo-500/30">
           <LayoutGrid className="w-12 h-12 text-indigo-400" />
         </div>
-        <h1 className="text-4xl font-bold text-white">مستخرج الأفلام من الأقسام</h1>
+        <h1 className="text-4xl font-bold text-white">مستخرج الأقسام (Turbo)</h1>
         <p className="text-slate-400 max-w-2xl mx-auto">
-          أدخل رابط القسم (Category) وسيقوم النظام بالدخول إلى كل فيلم في الصفحة واستخراج بياناته بالكامل.
+          أدخل رابط القسم، وسيقوم النظام باستخراج بيانات جميع العناصر الموجودة في الصفحة بذكاء وبسرعة فائقة.
         </p>
       </div>
 
@@ -197,14 +208,17 @@ export const PageExtractor: React.FC = () => {
               />
             </div>
             {error && <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm flex items-center gap-2"><AlertTriangle className="w-4 h-4" /> {error}</div>}
-            <Button onClick={handleStartExtraction} className="w-full py-4 text-xl font-bold bg-indigo-600 hover:bg-indigo-500" icon={<Search className="w-6 h-6 ml-2" />}>بدء استخراج القسم</Button>
+            <Button onClick={handleStartExtraction} className="w-full py-4 text-xl font-bold bg-gradient-to-r from-indigo-600 to-emerald-600 hover:from-indigo-500 hover:to-emerald-500 shadow-xl" icon={<Zap className="w-6 h-6 ml-2" />}>بدء الاستخراج السريع</Button>
           </div>
         </Card>
       )}
 
       {isProcessing && step !== 'processing_items' && (
         <Card className="flex flex-col items-center justify-center py-16 space-y-6">
-           <Loader2 className="w-16 h-16 text-indigo-500 animate-spin" />
+           <div className="relative">
+              <Loader2 className="w-20 h-20 text-indigo-500 animate-spin" />
+              <Zap className="absolute inset-0 m-auto w-8 h-8 text-indigo-400 animate-pulse" />
+           </div>
            <div className="text-center">
              <h3 className="text-xl font-bold text-white">
                {step === 'fetching_listing' ? 'جاري جلب صفحة القسم...' : 'جاري تحليل الروابط بواسطة AI...'}
@@ -219,14 +233,14 @@ export const PageExtractor: React.FC = () => {
           <div className="flex justify-between items-center sticky top-20 z-40 bg-slate-900/80 backdrop-blur-md p-4 rounded-2xl border border-white/10 shadow-xl">
              <Button variant="ghost" onClick={() => { setResults([]); setListingUrl(''); }} icon={<ChevronLeft className="w-4 h-4" />}>جديد</Button>
              <div className="flex items-center gap-4">
-               {isProcessing && <div className="text-indigo-400 text-sm font-bold flex items-center gap-2 animate-pulse"><RefreshCw className="w-4 h-4 animate-spin" /> جاري المعالجة...</div>}
+               {isProcessing && <div className="text-indigo-400 text-sm font-bold flex items-center gap-2 animate-pulse"><RefreshCw className="w-4 h-4 animate-spin" /> جاري المعالجة المتوازية...</div>}
                <Button onClick={exportAll} disabled={results.filter(r => r.status === 'success').length === 0} className="bg-emerald-600 hover:bg-emerald-500" icon={<FileSpreadsheet className="w-5 h-5 ml-2" />}>تصدير الكل لـ Excel</Button>
              </div>
           </div>
 
           <div className="grid gap-6">
             {results.map((res, idx) => (
-              <Card key={res.id} className={cn("p-0 overflow-hidden border-white/5", res.status === 'processing' && "ring-2 ring-indigo-500/50 shadow-indigo-500/20")}>
+              <Card key={res.id} className={cn("p-0 overflow-hidden border-white/5 transition-all duration-300", res.status === 'processing' && "ring-2 ring-indigo-500/50 shadow-indigo-500/20")}>
                 <div className="p-4 bg-slate-900/50 flex justify-between items-center border-b border-white/5">
                    <div className="flex items-center gap-4">
                      <span className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center text-xs font-bold text-slate-400">{idx + 1}</span>
@@ -288,7 +302,3 @@ export const PageExtractor: React.FC = () => {
     </div>
   );
 };
-
-const RefreshCw = ({ className }: { className?: string }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M3 21v-5h5"/></svg>
-);
