@@ -1,5 +1,4 @@
 
-
 export interface ServerInfo {
   name: string;
   url: string;
@@ -9,11 +8,11 @@ export interface MediaData {
   id: string;
   originalHtmlInputId: string;
   title: string;
-  seriesTitle?: string; // New: Clean name for grouping (e.g. "Game of Thrones" without S01E01)
-  season?: number;      // New: Explicit season number
-  episode?: number;     // New: Explicit episode number
+  seriesTitle?: string;
+  season?: number;
+  episode?: number;
   type: 'Movie' | 'Series';
-  episodeName?: string; // For series
+  episodeName?: string;
   servers: ServerInfo[];
   downloadLinks: ServerInfo[];
 }
@@ -29,15 +28,11 @@ export interface LogEntry {
   type: 'info' | 'success' | 'error';
 }
 
-// --- App Settings Types ---
-
 export interface AppSettings {
   uqloadApiKey: string;
   filenamePrefix: string;
-  ignoredKeywords: string[]; // List of words to remove from filenames (e.g. EgyBest)
+  ignoredKeywords: string[];
 }
-
-// --- AI Extractor Types ---
 
 export interface AiCastMember {
   name: string;
@@ -49,14 +44,16 @@ export interface AiEpisode {
   title: string;
   url?: string;
   thumbnail?: string;
+  duration?: string;
+  plot?: string;
 }
 
 export interface AiMediaResponse {
   title: string;
   originalTitle?: string;
-  seriesTitle?: string; // New
-  seasonNumber?: number; // New
-  episodeNumber?: number; // New
+  seriesTitle?: string;
+  seasonNumber?: number;
+  episodeNumber?: number;
   year?: string;
   plot?: string;
   posterUrl?: string;
@@ -66,11 +63,12 @@ export interface AiMediaResponse {
   cast: string[];
   watchServers: { name: string; url: string; quality?: string }[];
   downloadLinks: { name: string; url: string; quality?: string }[];
+  downloadPageUrl?: string; 
+  watchPageUrl?: string; 
+  nextEpisodeUrl?: string; 
   episodes?: AiEpisode[];
   gallery?: string[];
 }
-
-// --- Mass Cloner Types ---
 
 export interface CloneResult {
   id: string;
@@ -80,4 +78,9 @@ export interface CloneResult {
   watchUrl?: string;
   downloadUrl?: string;
   message?: string;
+}
+
+export interface ListingExtractionResponse {
+  links: string[];
+  categoryTitle?: string;
 }

@@ -1,4 +1,5 @@
 
+
 import React, { useState } from 'react';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -6,7 +7,6 @@ import {
   Bot, 
   Play, 
   Download, 
-  Film, 
   Tv, 
   Star, 
   Calendar, 
@@ -19,7 +19,9 @@ import {
   Layers,
   Eye,
   Link as LinkIcon,
-  Check
+  Check,
+  Clock,
+  FileText
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { analyzeHtmlWithGemini } from '../services/gemini';
@@ -336,30 +338,76 @@ export const AiExtractor: React.FC = () => {
               </div>
             )}
 
-            {/* Episodes (Series Only) */}
+            {/* Episodes (Series Only) - UPDATED FOR DETAILED VIEW */}
             {activeTab === 'episodes' && (
-              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
+              <div className="flex flex-col gap-4">
                 {data.episodes?.map((ep, idx) => (
-                  <a key={idx} href={ep.url || '#'} target="_blank" className="block group">
-                    <div className="bg-slate-800 border border-white/5 rounded-xl overflow-hidden hover:border-indigo-500/50 transition-all">
-                      <div className="aspect-video bg-slate-900 relative">
+                  <Card key={idx} className="hover:bg-slate-800/80 transition-colors group p-0 overflow-hidden">
+                    <div className="flex flex-col md:flex-row">
+                      {/* Thumbnail Side */}
+                      <div className="relative w-full md:w-64 aspect-video bg-slate-900 flex-shrink-0">
                         {ep.thumbnail ? (
-                          <img src={ep.thumbnail} alt="" className="w-full h-full object-cover" />
+                           <img src={ep.thumbnail} alt="" className="w-full h-full object-cover" />
                         ) : (
-                          <div className="w-full h-full flex items-center justify-center text-slate-700">
-                             <Tv className="w-8 h-8" />
-                          </div>
+                           <div className="w-full h-full flex items-center justify-center text-slate-700">
+                              <Tv className="w-10 h-10" />
+                           </div>
                         )}
-                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-                          <Play className="w-8 h-8 text-white fill-white" />
+                        <a href={ep.url || '#'} target="_blank" className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                           <div className="p-3 rounded-full bg-indigo-600 text-white shadow-lg transform scale-90 group-hover:scale-100 transition-transform">
+                             <Play className="w-6 h-6 ml-0.5" />
+                           </div>
+                        </a>
+                      </div>
+                      
+                      {/* Content Side */}
+                      <div className="p-5 flex-1 flex flex-col justify-between">
+                        <div>
+                          <div className="flex items-start justify-between mb-2">
+                             <div>
+                               <div className="text-xs font-bold text-indigo-400 mb-1">الحلقة {ep.number}</div>
+                               <h3 className="font-bold text-white text-lg leading-tight">{ep.title || `Episode ${ep.number}`}</h3>
+                             </div>
+                             {ep.duration && (
+                               <div className="flex items-center gap-1.5 px-2 py-1 rounded bg-slate-950/50 border border-white/5 text-xs text-slate-400">
+                                 <Clock className="w-3 h-3" />
+                                 {ep.duration}
+                               </div>
+                             )}
+                          </div>
+                          
+                          {ep.plot ? (
+                            <p className="text-sm text-slate-400 leading-relaxed line-clamp-2 md:line-clamp-3 mb-4">
+                              {ep.plot}
+                            </p>
+                          ) : (
+                            <p className="text-sm text-slate-600 italic mb-4">لا يوجد وصف للحلقة.</p>
+                          )}
+                        </div>
+
+                        <div className="flex items-center gap-3 mt-auto pt-3 border-t border-white/5">
+                           {ep.url && (
+                             <a 
+                               href={ep.url} 
+                               target="_blank" 
+                               rel="noreferrer"
+                               className="text-xs text-indigo-300 hover:text-white flex items-center gap-1 transition-colors"
+                             >
+                               مشاهدة الحلقة <ExternalLink className="w-3 h-3" />
+                             </a>
+                           )}
+                           {ep.thumbnail && (
+                             <button
+                               onClick={() => copyToClipboard(ep.thumbnail!)}
+                               className="text-xs text-slate-500 hover:text-slate-300 flex items-center gap-1 transition-colors"
+                             >
+                               نسخ رابط الصورة <Copy className="w-3 h-3" />
+                             </button>
+                           )}
                         </div>
                       </div>
-                      <div className="p-3">
-                        <div className="text-xs text-indigo-400 font-bold mb-1">الحلقة {ep.number}</div>
-                        <div className="text-sm text-white truncate">{ep.title || `Episode ${ep.number}`}</div>
-                      </div>
                     </div>
-                  </a>
+                  </Card>
                 ))}
                 {(!data.episodes || data.episodes.length === 0) && <EmptyState message="لم يتم العثور على حلقات" />}
               </div>

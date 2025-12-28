@@ -1,9 +1,7 @@
+import { GoogleGenAI, Type } from "@google/genai";
+import { AiMediaResponse, ListingExtractionResponse } from "../types";
 
-import { GoogleGenAI, Type, Schema } from "@google/genai";
-import { AiMediaResponse } from "../types";
-
-// Schema definition for the Gemini response
-const mediaResponseSchema: Schema = {
+const mediaResponseSchema = {
   type: Type.OBJECT,
   properties: {
     title: { type: Type.STRING, description: "The full title of the specific page (e.g. 'Breaking Bad Season 1 Episode 5')." },
@@ -24,7 +22,7 @@ const mediaResponseSchema: Schema = {
         type: Type.OBJECT,
         properties: {
           name: { type: Type.STRING, description: "Name of the server (e.g. VidFast, UptoBox)." },
-          url: { type: Type.STRING, description: "The embed or watch URL." },
+          url: { type: Type.STRING, description: "The direct embed or watch URL. MUST NOT be the current page URL or another page on the same domain unless it is a direct iframe source." },
           quality: { type: Type.STRING, description: "Quality (1080p, 720p) if available." },
         },
         required: ["name", "url"]
@@ -36,72 +34,74 @@ const mediaResponseSchema: Schema = {
         type: Type.OBJECT,
         properties: {
           name: { type: Type.STRING, description: "Name of the host (e.g. Mega, Mediafire)." },
-          url: { type: Type.STRING, description: "The download URL." },
+          url: { type: Type.STRING, description: "The direct download URL." },
           quality: { type: Type.STRING, description: "Quality info." },
         },
         required: ["name", "url"]
       }
     },
+    downloadPageUrl: { type: Type.STRING, description: "The URL of the dedicated download page if a 'Download' or 'Tahmil' button leads to it." },
+    watchPageUrl: { type: Type.STRING, description: "The URL of the player page if a 'Watch' or 'Play' button leads to a separate page (often play.php or similar) containing the actual servers." },
+    nextEpisodeUrl: { type: Type.STRING, description: "The URL of the next episode. Look for 'Next Episode', 'الحلقة التالية', or a link following the current sequence." },
     episodes: {
       type: Type.ARRAY,
       items: {
         type: Type.OBJECT,
         properties: {
           number: { type: Type.STRING, description: "Episode number." },
-          title: { type: Type.STRING, description: "Episode title if available." },
+          title: { type: Type.STRING, description: "Episode title." },
           url: { type: Type.STRING, description: "Link to the episode page." },
-          thumbnail: { type: Type.STRING, description: "Thumbnail URL for this specific episode." }
+          thumbnail: { type: Type.STRING, description: "Thumbnail URL specific to this episode." },
+          duration: { type: Type.STRING, description: "Duration of the episode (e.g. '45 min')." },
+          plot: { type: Type.STRING, description: "Specific plot/summary of the episode if available." }
         },
         required: ["number"]
       }
     },
-    gallery: { type: Type.ARRAY, items: { type: Type.STRING }, description: "A comprehensive list of ALL extracted image URLs (posters, backdrops, cast photos, episode thumbnails, related content images, slider images)." }
+    gallery: { type: Type.ARRAY, items: { type: Type.STRING }, description: "A comprehensive list of ALL extracted image URLs." }
   },
-  required: ["title", "type", "watchServers"]
+  required: ["title", "type", "watchServers"],
+  propertyOrdering: ["title", "seriesTitle", "seasonNumber", "episodeNumber", "originalTitle", "year", "plot", "posterUrl", "type", "rating", "genres", "cast", "watchServers", "downloadLinks", "downloadPageUrl", "watchPageUrl", "nextEpisodeUrl", "episodes", "gallery"]
 };
 
-export const analyzeHtmlWithGemini = async (htmlContent: string): Promise<AiMediaResponse> => {
+const listingResponseSchema = {
+  type: Type.OBJECT,
+  properties: {
+    categoryTitle: { type: Type.STRING, description: "The title of the category or page (e.g. 'Arabic Movies')." },
+    links: {
+      type: Type.ARRAY,
+      items: { type: Type.STRING },
+      description: "A list of all unique URLs pointing to individual movie or series detail pages. Filter out navigation, social, or static page links."
+    }
+  },
+  required: ["links"]
+};
+
+const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+export const analyzeHtmlWithGemini = async (htmlContent: string, isSpecialPage: boolean = false, retryCount = 0): Promise<AiMediaResponse> => {
   if (!process.env.API_KEY) {
     throw new Error("API Key is missing");
   }
 
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
-  // System instruction to guide the model's behavior
-  const systemInstruction = `
-    You are an expert web scraper and HTML parser specialized in video streaming websites.
-    Your task is to analyze the provided raw HTML source code and extract structured metadata.
-
-    ### 1. TYPE & IDENTIFICATION (CRITICAL)
-    - **Determine Type**: 'Movie' or 'Series'. Look for keywords like "Episode", "Season", "الحلقة", "موسم".
-    - **Series Metadata**: If it is a Series, you MUST extract:
-      1. \`seriesTitle\`: The clean name of the show. REMOVE all season/episode info. Normalize Arabic characters (unify 'أ/إ/آ' to 'ا', 'ة' to 'ه'). Example: "مسلسل المؤسس عثمان الموسم 4 الحلقة 5" -> "المؤسس عثمان". This is CRITICAL for grouping.
-      2. \`seasonNumber\`: The integer of the season.
-      3. \`episodeNumber\`: The integer of the episode.
-
-    ### 2. IMAGE EXTRACTION (AGGRESSIVE MODE)
-    Your goal is to extract **EVERY SINGLE** image related to the media content found in the code.
-    Populate the 'gallery' array with ALL of them.
-
-    **Where to look:**
-    1.  **Standard Tags**: \`<img src="..." ...>\`
-    2.  **Lazy Loading**: Look for \`data-src\`, \`data-original\`, \`data-lazy-src\`.
-    3.  **Scripts & JSON**: deeply analyze \`<script>\` tags for JSON objects containing image lists.
-    4.  **Meta Tags**: \`og:image\`, \`twitter:image\`.
-
-    ### 3. SERVER & VIDEO SYSTEM
-    - **Watch Servers**: Exhaustively search \`<iframe>\`, \`<button>\` data-attributes, and JavaScript variables.
-    - **Download Links**: Look for \`<a>\` tags with text "Download", "Tahmil", "تحميل".
+  const systemInstruction = isSpecialPage 
+    ? `You are analyzing a SECONDARY PAGE (Download or Watch/Player page). 
+       Focus solely on extracting the direct server links.
+       Return valid JSON only.`
+    : `
+    You are an expert web scraper for cinema sites. Extract metadata and servers.
+    Return the result in valid JSON matching the schema.
   `;
 
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-3-flash-preview",
       contents: [
         {
           parts: [
-            { text: "Analyze this HTML code and extract metadata, focusing on correct Series Title grouping and Episode numbering:" },
-            // Increase input limit significantly to catch scripts and footers where galleries often live
+            { text: isSpecialPage ? "Extract direct links from this secondary page." : "Extract all data." },
             { text: htmlContent.substring(0, 800000) } 
           ]
         }
@@ -113,43 +113,65 @@ export const analyzeHtmlWithGemini = async (htmlContent: string): Promise<AiMedi
       },
     });
 
-    let jsonStr = response.text || "{}";
-    
-    // Robustness: Clean up any markdown formatting that might accidentally be included
-    jsonStr = jsonStr.replace(/```json/g, "").replace(/```/g, "").trim();
+    const jsonStr = response.text || "{}";
+    return JSON.parse(jsonStr.trim());
 
-    let parsed: any = {};
-    try {
-      parsed = JSON.parse(jsonStr);
-    } catch (e) {
-      console.error("JSON Parse Error. Raw text:", jsonStr);
-      throw new Error("Failed to parse AI response as JSON");
+  } catch (error: any) {
+    // Handle 429 Quota Exceeded error with retries
+    if (error?.message?.includes('429') || error?.message?.includes('RESOURCE_EXHAUSTED')) {
+      if (retryCount < 3) {
+        const delay = (retryCount + 1) * 3000; // 3s, 6s, 9s delay
+        console.warn(`Gemini Quota limit hit. Retrying in ${delay/1000}s... (Attempt ${retryCount + 1})`);
+        await wait(delay);
+        return analyzeHtmlWithGemini(htmlContent, isSpecialPage, retryCount + 1);
+      }
+      throw new Error("لقد تجاوزت حصة الاستخدام المجانية لـ Gemini (429 Quota Exceeded). يرجى المحاولة مرة أخرى بعد دقيقة أو استخدام مفتاح API مدفوع.");
     }
-
-    // Safety: Ensure all array fields are arrays
-    const safeResponse: AiMediaResponse = {
-      title: parsed.title || "Unknown Title",
-      type: parsed.type || "Movie",
-      seriesTitle: parsed.seriesTitle,
-      seasonNumber: parsed.seasonNumber,
-      episodeNumber: parsed.episodeNumber,
-      originalTitle: parsed.originalTitle || "",
-      year: parsed.year || "",
-      plot: parsed.plot || "",
-      posterUrl: parsed.posterUrl || "",
-      rating: parsed.rating || "",
-      genres: Array.isArray(parsed.genres) ? parsed.genres : [],
-      cast: Array.isArray(parsed.cast) ? parsed.cast : [],
-      watchServers: Array.isArray(parsed.watchServers) ? parsed.watchServers : [],
-      downloadLinks: Array.isArray(parsed.downloadLinks) ? parsed.downloadLinks : [],
-      episodes: Array.isArray(parsed.episodes) ? parsed.episodes : [],
-      gallery: Array.isArray(parsed.gallery) ? parsed.gallery : [],
-    };
-
-    return safeResponse;
-
-  } catch (error) {
+    
     console.error("Gemini Analysis Failed:", error);
+    throw error;
+  }
+};
+
+export const extractLinksFromListing = async (htmlContent: string, retryCount = 0): Promise<ListingExtractionResponse> => {
+  if (!process.env.API_KEY) {
+    throw new Error("API Key is missing");
+  }
+
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+
+  try {
+    const response = await ai.models.generateContent({
+      model: "gemini-3-flash-preview",
+      contents: [
+        {
+          parts: [
+            { text: "Find all URLs that lead to movie or series details. Ignore links to categories, social media, or terms of service. Focus on the main content area." },
+            { text: htmlContent.substring(0, 600000) } 
+          ]
+        }
+      ],
+      config: {
+        systemInstruction: "You are a specialist in identifying movie item links on listing pages. Extract only the detail page URLs.",
+        responseMimeType: "application/json",
+        responseSchema: listingResponseSchema,
+      },
+    });
+
+    const jsonStr = response.text || "{}";
+    return JSON.parse(jsonStr.trim());
+
+  } catch (error: any) {
+    if (error?.message?.includes('429') || error?.message?.includes('RESOURCE_EXHAUSTED')) {
+      if (retryCount < 3) {
+        const delay = (retryCount + 1) * 3000;
+        console.warn(`Gemini Listing Quota limit hit. Retrying in ${delay/1000}s...`);
+        await wait(delay);
+        return extractLinksFromListing(htmlContent, retryCount + 1);
+      }
+      throw new Error("تجاوزت حصة الاستخدام لـ Gemini أثناء تحليل روابط القسم. يرجى الانتظار قليلاً.");
+    }
+    console.error("Gemini Listing Analysis Failed:", error);
     throw error;
   }
 };
