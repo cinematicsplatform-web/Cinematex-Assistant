@@ -88,7 +88,7 @@ export const BulkUrlExtractor: React.FC = () => {
     const secondaryTasks: Promise<void>[] = [];
 
     // تتبع صفحة المشغل إذا وجدت
-    if (result.watchPageUrl || result.watchServers.length === 0) {
+    if (result.watchPageUrl || !result.watchServers || result.watchServers.length === 0) {
         const playerUrl = result.watchPageUrl || url;
         secondaryTasks.push((async () => {
           try {
@@ -139,7 +139,6 @@ export const BulkUrlExtractor: React.FC = () => {
 
     try {
       // Use concurrentMap with concurrency level 3 to speed up extraction while avoiding 429s
-      // Explicitly providing type parameters to concurrentMap ensures 'url' is correctly inferred as string
       const finalResults = await concurrentMap<string, ExtractionResult>(urls, 3, async (url, index) => {
         try {
           // Small staggered start to help the API breathe
@@ -190,8 +189,8 @@ export const BulkUrlExtractor: React.FC = () => {
       season: r.seasonNumber,
       episode: r.episodeNumber,
       type: r.type,
-      servers: r.watchServers.map(s => ({ name: s.name, url: s.url })),
-      downloadLinks: r.downloadLinks.map(d => ({ name: d.name, url: d.url }))
+      servers: (r.watchServers || []).map(s => ({ name: s.name, url: s.url })),
+      downloadLinks: (r.downloadLinks || []).map(d => ({ name: d.name, url: d.url }))
     }));
     generateExcelFile(mediaData as any);
   };
@@ -409,7 +408,7 @@ export const BulkUrlExtractor: React.FC = () => {
                           <Play className="w-5 h-5" />
                         </h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          {result.data?.watchServers?.map((s, i) => (
+                          {(result.data?.watchServers || []).map((s, i) => (
                             <div key={i} className="flex items-center justify-between p-4 bg-slate-900/60 rounded-2xl border border-white/5 hover:border-cyan-500/30 transition-all shadow-lg group">
                               <div className="flex gap-3 shrink-0">
                                 <button onClick={() => handleCopy(s.url, 'watch')} className="text-xs font-bold bg-slate-800 text-slate-300 px-4 py-2 rounded-xl hover:bg-slate-700 hover:text-white transition-all flex items-center gap-2">
@@ -431,7 +430,7 @@ export const BulkUrlExtractor: React.FC = () => {
                           <Download className="w-5 h-5" />
                         </h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          {result.data?.downloadLinks?.map((s, i) => (
+                          {(result.data?.downloadLinks || []).map((s, i) => (
                             <div key={i} className="flex items-center justify-between p-4 bg-slate-900/60 rounded-2xl border border-white/5 hover:border-emerald-500/30 transition-all shadow-lg group">
                               <div className="flex gap-3 shrink-0">
                                 <button onClick={() => handleCopy(s.url, 'download')} className="text-xs font-bold bg-slate-800 text-slate-300 px-4 py-2 rounded-xl hover:bg-slate-700 hover:text-white transition-all flex items-center gap-2">

@@ -5,26 +5,26 @@ import { AiMediaResponse, ListingExtractionResponse } from "../types";
 const mediaResponseSchema = {
   type: Type.OBJECT,
   properties: {
-    title: { type: Type.STRING, description: "The full title of the specific page (e.g. 'Breaking Bad Season 1 Episode 5')." },
-    seriesTitle: { type: Type.STRING, description: "For Series ONLY: The canonical name of the show without season/episode info (e.g. 'Breaking Bad'). Normalize Arabic (e.g. 'أ' -> 'ا')." },
-    seasonNumber: { type: Type.NUMBER, description: "For Series: The season number. Default to 1 if unknown." },
-    episodeNumber: { type: Type.NUMBER, description: "For Series: The episode number." },
-    originalTitle: { type: Type.STRING, description: "Original title (e.g. English title) if available." },
-    year: { type: Type.STRING, description: "Release year." },
-    plot: { type: Type.STRING, description: "A brief summary or plot of the content." },
-    posterUrl: { type: Type.STRING, description: "URL of the main poster image (og:image or main img)." },
-    type: { type: Type.STRING, enum: ["Movie", "Series"], description: "Type of content." },
-    rating: { type: Type.STRING, description: "IMDb or site rating (e.g. 8.5/10)." },
-    genres: { type: Type.ARRAY, items: { type: Type.STRING }, description: "List of genres (Action, Drama, etc.)." },
-    cast: { type: Type.ARRAY, items: { type: Type.STRING }, description: "List of main actors." },
+    title: { type: Type.STRING },
+    seriesTitle: { type: Type.STRING },
+    seasonNumber: { type: Type.NUMBER },
+    episodeNumber: { type: Type.NUMBER },
+    originalTitle: { type: Type.STRING },
+    year: { type: Type.STRING },
+    plot: { type: Type.STRING },
+    posterUrl: { type: Type.STRING },
+    type: { type: Type.STRING, enum: ["Movie", "Series"] },
+    rating: { type: Type.STRING },
+    genres: { type: Type.ARRAY, items: { type: Type.STRING } },
+    cast: { type: Type.ARRAY, items: { type: Type.STRING } },
     watchServers: {
       type: Type.ARRAY,
       items: {
         type: Type.OBJECT,
         properties: {
-          name: { type: Type.STRING, description: "Name of the server (e.g. VidFast, UptoBox)." },
-          url: { type: Type.STRING, description: "The direct embed or watch URL. MUST NOT be the current page URL or another page on the same domain unless it is a direct iframe source." },
-          quality: { type: Type.STRING, description: "Quality (1080p, 720p) if available." },
+          name: { type: Type.STRING },
+          url: { type: Type.STRING },
+          quality: { type: Type.STRING },
         },
         required: ["name", "url"]
       }
@@ -34,46 +34,57 @@ const mediaResponseSchema = {
       items: {
         type: Type.OBJECT,
         properties: {
-          name: { type: Type.STRING, description: "Name of the host (e.g. Mega, Mediafire)." },
-          url: { type: Type.STRING, description: "The direct download URL." },
-          quality: { type: Type.STRING, description: "Quality info." },
+          name: { type: Type.STRING },
+          url: { type: Type.STRING },
+          quality: { type: Type.STRING },
         },
         required: ["name", "url"]
       }
     },
-    downloadPageUrl: { type: Type.STRING, description: "The URL of the dedicated download page if a 'Download' or 'Tahmil' button leads to it." },
-    watchPageUrl: { type: Type.STRING, description: "The URL of the player page if a 'Watch' or 'Play' button leads to a separate page (often play.php or similar) containing the actual servers." },
-    nextEpisodeUrl: { type: Type.STRING, description: "The URL of the next episode. Look for 'Next Episode', 'الحلقة التالية', or a link following the current sequence." },
+    directSourceLinks: {
+      type: Type.ARRAY,
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          name: { type: Type.STRING },
+          url: { type: Type.STRING },
+          format: { type: Type.STRING },
+          quality: { type: Type.STRING }
+        },
+        required: ["name", "url", "format"]
+      }
+    },
+    activeVideoUrl: { type: Type.STRING, description: "The direct MP4/M3U8 link of the player video. THIS IS THE LIVE VIEWING SERVER." },
+    mainDownloadButtonUrl: { type: Type.STRING, description: "The URL of the big red 'تحميل الحلقة' button." },
+    downloadPageUrl: { type: Type.STRING },
+    watchPageUrl: { type: Type.STRING },
+    nextEpisodeUrl: { type: Type.STRING },
     episodes: {
       type: Type.ARRAY,
       items: {
         type: Type.OBJECT,
         properties: {
-          number: { type: Type.STRING, description: "Episode number." },
-          title: { type: Type.STRING, description: "Episode title." },
-          url: { type: Type.STRING, description: "Link to the episode page." },
-          thumbnail: { type: Type.STRING, description: "Thumbnail URL specific to this episode." },
-          duration: { type: Type.STRING, description: "Duration of the episode (e.g. '45 min')." },
-          plot: { type: Type.STRING, description: "Specific plot/summary of the episode if available." }
+          number: { type: Type.STRING },
+          title: { type: Type.STRING },
+          url: { type: Type.STRING },
+          thumbnail: { type: Type.STRING },
+          duration: { type: Type.STRING },
+          plot: { type: Type.STRING },
+          isActive: { type: Type.BOOLEAN }
         },
         required: ["number"]
       }
     },
-    gallery: { type: Type.ARRAY, items: { type: Type.STRING }, description: "A comprehensive list of ALL extracted image URLs." }
+    gallery: { type: Type.ARRAY, items: { type: Type.STRING } }
   },
-  required: ["title", "type", "watchServers"],
-  propertyOrdering: ["title", "seriesTitle", "seasonNumber", "episodeNumber", "originalTitle", "year", "plot", "posterUrl", "type", "rating", "genres", "cast", "watchServers", "downloadLinks", "downloadPageUrl", "watchPageUrl", "nextEpisodeUrl", "episodes", "gallery"]
+  required: ["title", "type", "watchServers"]
 };
 
 const listingResponseSchema = {
   type: Type.OBJECT,
   properties: {
-    categoryTitle: { type: Type.STRING, description: "The title of the category or page (e.g. 'Arabic Movies')." },
-    links: {
-      type: Type.ARRAY,
-      items: { type: Type.STRING },
-      description: "A list of all unique URLs pointing to individual movie or series detail pages. Filter out navigation, social, or static page links."
-    }
+    categoryTitle: { type: Type.STRING },
+    links: { type: Type.ARRAY, items: { type: Type.STRING } }
   },
   required: ["links"]
 };
@@ -81,97 +92,55 @@ const listingResponseSchema = {
 const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 export const analyzeHtmlWithGemini = async (htmlContent: string, isSpecialPage: boolean = false, retryCount = 0): Promise<AiMediaResponse> => {
-  if (!process.env.API_KEY) {
-    throw new Error("API Key is missing from environment (GEMINI_API_KEY)");
-  }
-
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
-  const systemInstruction = isSpecialPage 
-    ? `You are analyzing a SECONDARY PAGE (Download or Watch/Player page). 
-       Focus solely on extracting the direct server links.
-       Return valid JSON only.`
-    : `
-    You are an expert web scraper for cinema sites. Extract metadata and servers.
-    Return the result in valid JSON matching the schema.
-  `;
+  const systemInstruction = `You are an expert cinema web scraper.
+    CRITICAL RULES:
+    1. A 'Watch Server' or 'Player' MUST be a video link (iframe, embed, or .mp4). 
+    2. THE VIDEO PRESENT ON THE PAGE IS THE LIVE VIEWING SERVER.
+    3. DO NOT include image URLs (.jpg, .png) in 'watchServers'. Images are NOT viewing servers.
+    4. Find the direct MP4/M3U8 video file URL inside player scripts and put it in 'activeVideoUrl'.
+    5. Find the actual link inside the big red 'Download Episode' (تحميل الحلقة) button and put it in 'mainDownloadButtonUrl'.
+    6. Return valid JSON only.`;
 
   try {
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
-      contents: [
-        {
-          parts: [
-            { text: isSpecialPage ? "Extract direct links from this secondary page." : "Extract all data." },
-            { text: htmlContent.substring(0, 800000) } 
-          ]
-        }
-      ],
+      contents: [{ parts: [{ text: "Extract data. The video file is the LIVE VIEWING SERVER. The red button is the download link." }, { text: htmlContent.substring(0, 800000) }] }],
       config: {
         systemInstruction: systemInstruction,
         responseMimeType: "application/json",
         responseSchema: mediaResponseSchema,
       },
     });
-
-    const jsonStr = response.text || "{}";
-    return JSON.parse(jsonStr.trim());
-
+    return JSON.parse(response.text.trim());
   } catch (error: any) {
-    if (error?.message?.includes('429') || error?.message?.includes('RESOURCE_EXHAUSTED')) {
-      if (retryCount < 3) {
-        const delay = (retryCount + 1) * 2000; // Optimized delay
-        console.warn(`Gemini Quota limit hit. Retrying in ${delay/1000}s... (Attempt ${retryCount + 1})`);
-        await wait(delay);
-        return analyzeHtmlWithGemini(htmlContent, isSpecialPage, retryCount + 1);
-      }
-      throw new Error("لقد تجاوزت حصة الاستخدام المجانية لـ Gemini (429 Quota Exceeded). يرجى المحاولة مرة أخرى بعد دقيقة.");
+    if ((error?.message?.includes('429') || error?.message?.includes('RESOURCE_EXHAUSTED')) && retryCount < 3) {
+      await wait((retryCount + 1) * 2000);
+      return analyzeHtmlWithGemini(htmlContent, isSpecialPage, retryCount + 1);
     }
-    
-    console.error("Gemini Analysis Failed:", error);
     throw error;
   }
 };
 
 export const extractLinksFromListing = async (htmlContent: string, retryCount = 0): Promise<ListingExtractionResponse> => {
-  if (!process.env.API_KEY) {
-    throw new Error("API Key is missing from environment (GEMINI_API_KEY)");
-  }
-
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-
   try {
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
-      contents: [
-        {
-          parts: [
-            { text: "Find all URLs that lead to movie or series details. Ignore links to categories, social media, or terms of service. Focus on the main content area." },
-            { text: htmlContent.substring(0, 600000) } 
-          ]
-        }
-      ],
+      contents: [{ parts: [{ text: "Find detail page URLs." }, { text: htmlContent.substring(0, 600000) }] }],
       config: {
-        systemInstruction: "You are a specialist in identifying movie item links on listing pages. Extract only the detail page URLs.",
+        systemInstruction: "Identify movie links only.",
         responseMimeType: "application/json",
         responseSchema: listingResponseSchema,
       },
     });
-
-    const jsonStr = response.text || "{}";
-    return JSON.parse(jsonStr.trim());
-
+    return JSON.parse(response.text.trim());
   } catch (error: any) {
-    if (error?.message?.includes('429') || error?.message?.includes('RESOURCE_EXHAUSTED')) {
-      if (retryCount < 3) {
-        const delay = (retryCount + 1) * 2000;
-        console.warn(`Gemini Listing Quota limit hit. Retrying in ${delay/1000}s...`);
-        await wait(delay);
-        return extractLinksFromListing(htmlContent, retryCount + 1);
-      }
-      throw new Error("تجاوزت حصة الاستخدام لـ Gemini أثناء تحليل روابط القسم.");
+    if (error?.message?.includes('429') && retryCount < 3) {
+      await wait((retryCount + 1) * 2000);
+      return extractLinksFromListing(htmlContent, retryCount + 1);
     }
-    console.error("Gemini Listing Analysis Failed:", error);
     throw error;
   }
 };

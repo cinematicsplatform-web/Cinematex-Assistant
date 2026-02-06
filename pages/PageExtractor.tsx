@@ -104,11 +104,8 @@ export const PageExtractor: React.FC = () => {
     setResults([]);
     
     try {
-      // 1. Fetch Listing Page
       setStep('fetching_listing');
       const listingHtml = await fetchHtmlWithProxy(listingUrl);
-      
-      // 2. Extract links using Gemini
       setStep('analyzing_listing');
       const { links } = await extractLinksFromListing(listingHtml);
       
@@ -117,23 +114,13 @@ export const PageExtractor: React.FC = () => {
       }
 
       setStep('processing_items');
-      
-      // Initialize results with pending state
-      const initialTasks: TaskStatus[] = links.map(url => ({
-        url,
-        id: generateId(),
-        status: 'pending'
-      }));
+      const initialTasks: TaskStatus[] = links.map(url => ({ url, id: generateId(), status: 'pending' }));
       setResults(initialTasks);
 
-      // Speed up by using parallel concurrency
       await concurrentMap(initialTasks, 3, async (task, index) => {
         setResults(prev => prev.map(t => t.id === task.id ? { ...t, status: 'processing' } : t));
-
         try {
-          // Subtle staggered start
           if (index > 0 && index < 3) await sleep(500);
-
           const data = await processSingleMovie(task.url);
           setResults(prev => prev.map(t => t.id === task.id ? { ...t, data, status: 'success' } : t));
         } catch (err: any) {
@@ -144,7 +131,6 @@ export const PageExtractor: React.FC = () => {
           setResults(prev => prev.map(t => t.id === task.id ? { ...t, status: 'failed', error: errorMsg } : t));
         }
       });
-
     } catch (err: any) {
       setError(err.message || 'حدث خطأ أثناء معالجة الصفحة');
     } finally {
@@ -165,8 +151,8 @@ export const PageExtractor: React.FC = () => {
       season: r.seasonNumber,
       episode: r.episodeNumber,
       type: r.type,
-      servers: r.watchServers.map(s => ({ name: s.name, url: s.url })),
-      downloadLinks: r.downloadLinks.map(d => ({ name: d.name, url: d.url }))
+      servers: (r.watchServers || []).map(s => ({ name: s.name, url: s.url })),
+      downloadLinks: (r.downloadLinks || []).map(d => ({ name: d.name, url: d.url }))
     }));
     generateExcelFile(mediaItems as any);
   };
@@ -261,7 +247,7 @@ export const PageExtractor: React.FC = () => {
                     <div>
                       <h4 className="text-xs font-bold text-cyan-400 mb-4 flex items-center gap-2 uppercase"><Play className="w-3 h-3" /> سيرفرات المشاهدة</h4>
                       <div className="space-y-2">
-                        {res.data.watchServers.slice(0, 4).map((s, i) => (
+                        {(res.data.watchServers || []).slice(0, 4).map((s, i) => (
                           <div key={i} className="flex items-center justify-between p-2 bg-black/20 rounded-lg text-xs group">
                             <span className="text-slate-300 truncate pr-4">{s.name}</span>
                             <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -275,7 +261,7 @@ export const PageExtractor: React.FC = () => {
                     <div>
                       <h4 className="text-xs font-bold text-emerald-400 mb-4 flex items-center gap-2 uppercase"><Download className="w-3 h-3" /> روابط التحميل</h4>
                       <div className="space-y-2">
-                        {res.data.downloadLinks.slice(0, 4).map((s, i) => (
+                        {(res.data.downloadLinks || []).slice(0, 4).map((s, i) => (
                           <div key={i} className="flex items-center justify-between p-2 bg-black/20 rounded-lg text-xs group">
                             <span className="text-slate-300 truncate pr-4">{s.name}</span>
                             <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">

@@ -1,3 +1,4 @@
+
 import React, { useState, useRef } from 'react';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -72,7 +73,6 @@ export const SerialExtractor: React.FC = () => {
         const targetWatchUrl = result.watchPageUrl || url;
         if (targetWatchUrl && (result.watchPageUrl || result.watchServers.length === 0)) {
             try {
-                console.log("Fetching player page:", targetWatchUrl);
                 const watchHtml = await fetchHtmlWithProxy(targetWatchUrl);
                 const watchResult = await analyzeHtmlWithGemini(watchHtml, true);
                 if (watchResult.watchServers && watchResult.watchServers.length > 0) {
@@ -87,7 +87,6 @@ export const SerialExtractor: React.FC = () => {
     // 2. معالجة صفحة التحميل (إذا لزم الأمر)
     if (result.downloadPageUrl && (!result.downloadLinks || result.downloadLinks.length < 2)) {
       try {
-        console.log("Fetching download page:", result.downloadPageUrl);
         const downloadHtml = await fetchHtmlWithProxy(result.downloadPageUrl);
         const downloadResult = await analyzeHtmlWithGemini(downloadHtml, true);
         if (downloadResult.downloadLinks && downloadResult.downloadLinks.length > 0) {
@@ -187,8 +186,8 @@ export const SerialExtractor: React.FC = () => {
       season: r.seasonNumber,
       episode: r.episodeNumber,
       type: r.type,
-      servers: r.watchServers.map(s => ({ name: s.name, url: s.url })),
-      downloadLinks: r.downloadLinks.map(d => ({ name: d.name, url: d.url }))
+      servers: (r.watchServers || []).map(s => ({ name: s.name, url: s.url })),
+      downloadLinks: (r.downloadLinks || []).map(d => ({ name: d.name, url: d.url }))
     }));
     generateExcelFile(mediaData as any);
   };
@@ -258,21 +257,6 @@ export const SerialExtractor: React.FC = () => {
               >
                 بدء استخراج المسلسل بالكامل
               </Button>
-              
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="p-4 bg-slate-900/50 rounded-xl border border-white/5 text-center">
-                   <div className="text-amber-400 font-bold mb-1">1. الفتح التلقائي</div>
-                   <p className="text-[10px] text-slate-500">يفتح الحلقة الأولى ويتبع أزرار "مشاهدة"</p>
-                </div>
-                <div className="p-4 bg-slate-900/50 rounded-xl border border-white/5 text-center">
-                   <div className="text-amber-400 font-bold mb-1">2. استخراج الروابط</div>
-                   <p className="text-[10px] text-slate-500">يجلب روابط السيرفرات المباشرة (Embeds)</p>
-                </div>
-                <div className="p-4 bg-slate-900/50 rounded-xl border border-white/5 text-center">
-                   <div className="text-amber-400 font-bold mb-1">3. الانتقال التتابعي</div>
-                   <p className="text-[10px] text-slate-500">يبحث عن الحلقة التالية ويكرر العملية</p>
-                </div>
-              </div>
             </div>
           </Card>
         </motion.div>
@@ -281,8 +265,6 @@ export const SerialExtractor: React.FC = () => {
       {/* Processing & Results Phase */}
       {(isProcessing || results.length > 0) && (
         <div className="space-y-8">
-          
-          {/* Status Header */}
           <div className="flex justify-between items-center sticky top-20 z-40 bg-slate-900/80 backdrop-blur-md p-4 rounded-2xl border border-white/10 shadow-xl">
              <div className="flex items-center gap-4">
                {isProcessing ? (
@@ -317,7 +299,6 @@ export const SerialExtractor: React.FC = () => {
              </div>
           </div>
 
-          {/* Episode Cards List */}
           <div className="space-y-10">
             {results.map((result, idx) => (
               <motion.div 
@@ -374,14 +355,13 @@ export const SerialExtractor: React.FC = () => {
                     </div>
                     
                     <div className="p-8 space-y-10">
-                      {/* Watch Servers */}
                       <div>
                         <h3 className="text-sm font-bold text-cyan-400 mb-5 flex items-center gap-2 uppercase tracking-widest justify-end">
                           ({result.data?.watchServers?.length || 0}) سيرفرات المشاهدة المباشرة
                           <Play className="w-5 h-5" />
                         </h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          {result.data?.watchServers?.map((s, i) => (
+                          {(result.data?.watchServers || []).map((s, i) => (
                             <div key={i} className="flex items-center justify-between p-4 bg-slate-900/60 rounded-2xl border border-white/5 hover:border-cyan-500/30 transition-all shadow-lg group">
                               <div className="flex gap-3 shrink-0">
                                 <button onClick={() => handleCopy(s.url, 'watch')} className="text-xs font-bold bg-slate-800 text-slate-300 px-4 py-2 rounded-xl hover:bg-slate-700 hover:text-white transition-all flex items-center gap-2"><Copy className="w-4 h-4" /> نسخ</button>
@@ -393,14 +373,13 @@ export const SerialExtractor: React.FC = () => {
                         </div>
                       </div>
 
-                      {/* Download Links */}
                       <div>
                         <h3 className="text-sm font-bold text-emerald-400 mb-5 flex items-center gap-2 uppercase tracking-widest justify-end">
                           ({result.data?.downloadLinks?.length || 0}) روابط التحميل المستخرجة
                           <Download className="w-5 h-5" />
                         </h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          {result.data?.downloadLinks?.map((s, i) => (
+                          {(result.data?.downloadLinks || []).map((s, i) => (
                             <div key={i} className="flex items-center justify-between p-4 bg-slate-900/60 rounded-2xl border border-white/5 hover:border-emerald-500/30 transition-all shadow-lg group">
                               <div className="flex gap-3 shrink-0">
                                 <button onClick={() => handleCopy(s.url, 'download')} className="text-xs font-bold bg-slate-800 text-slate-300 px-4 py-2 rounded-xl hover:bg-slate-700 hover:text-white transition-all flex items-center gap-2"><Copy className="w-4 h-4" /> نسخ</button>
@@ -409,11 +388,6 @@ export const SerialExtractor: React.FC = () => {
                               <span className="text-sm font-bold text-slate-200 truncate pr-4">{s.name}</span>
                             </div>
                           ))}
-                          {(!result.data?.downloadLinks || result.data?.downloadLinks.length === 0) && (
-                            <div className="col-span-full py-6 bg-slate-950/30 rounded-2xl border border-dashed border-slate-800 text-center text-slate-500 italic text-sm">
-                              لا توجد روابط تحميل مباشرة متوفرة لهذه الحلقة
-                            </div>
-                          )}
                         </div>
                       </div>
                     </div>
@@ -421,24 +395,6 @@ export const SerialExtractor: React.FC = () => {
                 )}
               </motion.div>
             ))}
-
-            {/* Next Episode Indicator */}
-            {isProcessing && !stopRef.current && (
-              <div className="flex flex-col items-center justify-center py-12 space-y-4">
-                 <div className="flex items-center gap-3 text-amber-500 font-bold">
-                    <Zap className="w-6 h-6 animate-pulse" />
-                    <span>يتم الآن البحث عن الحلقة القادمة...</span>
-                 </div>
-                 <div className="w-64 h-1 bg-slate-800 rounded-full overflow-hidden">
-                    <motion.div 
-                      className="h-full bg-amber-500"
-                      initial={{ width: 0 }}
-                      animate={{ width: '100%' }}
-                      transition={{ duration: 1.5, repeat: Infinity }}
-                    />
-                 </div>
-              </div>
-            )}
           </div>
         </div>
       )}

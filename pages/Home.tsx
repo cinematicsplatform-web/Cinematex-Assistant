@@ -3,7 +3,7 @@ import React from 'react';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { useNavigate } from 'react-router-dom';
-import { Bot, ArrowRight, Globe, Layers, ListOrdered, LayoutGrid } from 'lucide-react';
+import { Bot, ArrowRight, Globe, Layers, ListOrdered, LayoutGrid, Zap } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 export const Home: React.FC = () => {
@@ -42,8 +42,8 @@ export const Home: React.FC = () => {
         </motion.p>
       </div>
 
-      {/* Feature Cards Grid - Now 5 columns on desktop */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 w-full max-w-7xl px-4 text-right">
+      {/* Feature Cards Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 w-full max-w-7xl px-4 text-right">
         
         {/* Tool 1: URL Extractor */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
@@ -99,7 +99,7 @@ export const Home: React.FC = () => {
           </Card>
         </motion.div>
 
-        {/* New Tool 4: Page Extractor */}
+        {/* Tool 4: Page Extractor */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.55 }}>
           <Card className="h-full group border-emerald-500/30 hover:border-emerald-500/60 hover:bg-slate-800/80 transition-all duration-300">
              <div className="flex flex-col items-start h-full">
@@ -108,7 +108,7 @@ export const Home: React.FC = () => {
                </div>
                <h3 className="text-xl font-bold text-white mb-2">مستخرج الأقسام</h3>
                <p className="text-slate-400 text-sm mb-6 flex-1">
-                 استخراج كافة الأفلام الموجودة داخل رابط "قسم" أو "تصنيف" كامل.
+                 استخراج كافة الأفلام الموجودة داخل رابط "قسم" كامل.
                </p>
                <Button onClick={() => navigate('/page-extractor')} className="w-full bg-slate-800 hover:bg-emerald-600/20 hover:text-emerald-300 border border-slate-700" icon={<ArrowRight className="w-4 h-4 ml-2" />}>
                  فتح الأداة
@@ -117,18 +117,36 @@ export const Home: React.FC = () => {
           </Card>
         </motion.div>
 
-        {/* Tool 5: AI Extractor */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }}>
-          <Card className="h-full group hover:border-purple-500/40 hover:bg-slate-800/80 transition-all duration-300">
+        {/* Tool 5: Extraction Tool (NEW) */}
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.58 }}>
+          <Card className="h-full group border-purple-500/30 hover:border-purple-500/60 hover:bg-slate-800/80 transition-all duration-300">
              <div className="flex flex-col items-start h-full">
                <div className="p-3 rounded-xl bg-purple-500/10 text-purple-400 mb-4 group-hover:scale-110 transition-transform">
+                 <Zap className="w-8 h-8" />
+               </div>
+               <h3 className="text-xl font-bold text-white mb-2">أداة الاستخراج</h3>
+               <p className="text-slate-400 text-sm mb-6 flex-1">
+                 استخراج الحلقات بشكل تتابعي وبدقة عالية بدون AI.
+               </p>
+               <Button onClick={() => navigate('/extraction-tool')} className="w-full bg-slate-800 hover:bg-purple-600/20 hover:text-purple-300 border border-slate-700" icon={<ArrowRight className="w-4 h-4 ml-2" />}>
+                 فتح الأداة
+               </Button>
+             </div>
+          </Card>
+        </motion.div>
+
+        {/* Tool 6: AI Extractor */}
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }}>
+          <Card className="h-full group hover:border-slate-500/40 hover:bg-slate-800/80 transition-all duration-300">
+             <div className="flex flex-col items-start h-full">
+               <div className="p-3 rounded-xl bg-white/5 text-indigo-400 mb-4 group-hover:scale-110 transition-transform">
                  <Bot className="w-8 h-8" />
                </div>
                <h3 className="text-xl font-bold text-white mb-2">المحلل الذكي</h3>
                <p className="text-slate-400 text-sm mb-6 flex-1">
                  تحليل يدوي عميق لكود HTML مع استخراج معرض الصور.
                </p>
-               <Button onClick={() => navigate('/ai-extractor')} className="w-full bg-slate-800 hover:bg-purple-600/20 hover:text-purple-300 border border-slate-700" icon={<ArrowRight className="w-4 h-4 ml-2" />}>
+               <Button onClick={() => navigate('/ai-extractor')} className="w-full bg-slate-800 hover:bg-indigo-600/20 hover:text-indigo-300 border border-slate-700" icon={<ArrowRight className="w-4 h-4 ml-2" />}>
                  فتح الأداة
                </Button>
              </div>

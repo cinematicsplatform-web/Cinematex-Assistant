@@ -46,6 +46,7 @@ export interface AiEpisode {
   thumbnail?: string;
   duration?: string;
   plot?: string;
+  isActive?: boolean;
 }
 
 export interface AiMediaResponse {
@@ -63,6 +64,9 @@ export interface AiMediaResponse {
   cast: string[];
   watchServers: { name: string; url: string; quality?: string }[];
   downloadLinks: { name: string; url: string; quality?: string }[];
+  directSourceLinks?: { name: string; url: string; format: string; quality?: string }[];
+  activeVideoUrl?: string; // The URL of the video currently playing in the player
+  mainDownloadButtonUrl?: string; // The URL of the primary "Download" red button
   downloadPageUrl?: string; 
   watchPageUrl?: string; 
   nextEpisodeUrl?: string; 
@@ -83,4 +87,16 @@ export interface CloneResult {
 export interface ListingExtractionResponse {
   links: string[];
   categoryTitle?: string;
+}
+
+export interface ScriptExtractionResult {
+  title: string;
+  servers: ServerInfo[];
+  downloadLinks: ServerInfo[];
+  nextUrl?: string;
+  episodeNumber?: number;
+  seasonNumber?: number;
+  activeVideoUrl?: string;
+  mainDownloadButtonUrl?: string;
+  allEpisodes?: { number: number; url: string }[];
 }

@@ -8,7 +8,7 @@ const DEFAULT_IGNORED = [
 ];
 
 const DEFAULT_SETTINGS: AppSettings = {
-  uqloadApiKey: '150390klo47yxemdrsky1o', // Default fallback
+  uqloadApiKey: '150390klo47yxemdrsky1o',
   filenamePrefix: 'Cinematix_',
   ignoredKeywords: DEFAULT_IGNORED
 };
@@ -22,7 +22,6 @@ export const getSettings = (): AppSettings => {
     return {
       ...DEFAULT_SETTINGS,
       ...parsed,
-      // Ensure ignoredKeywords is array even if saved data is weird
       ignoredKeywords: Array.isArray(parsed.ignoredKeywords) ? parsed.ignoredKeywords : DEFAULT_IGNORED
     };
   } catch (e) {

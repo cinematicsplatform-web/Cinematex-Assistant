@@ -1,3 +1,4 @@
+
 import { MediaData, CloneResult } from '../types';
 
 declare global {
@@ -47,13 +48,16 @@ export const generateExcelFile = (data: MediaData[]) => {
   if (movies.length > 0) {
     const movieRows = movies.map(m => {
       const row: any = { 'اسم الفيلم': m.title };
+      const servers = m.servers || [];
+      const downloadLinks = m.downloadLinks || [];
+      
       // سيرفرات المشاهدة (8 أعمدة من B إلى I)
       for (let i = 0; i < 8; i++) {
-        row[`سيرفر مشاهدة ${i + 1}`] = m.servers[i]?.url || "";
+        row[`سيرفر مشاهدة ${i + 1}`] = servers[i]?.url || "";
       }
       // روابط التحميل (من J فصاعداً)
       for (let i = 0; i < 8; i++) {
-        row[`سيرفر تحميل ${i + 1}`] = m.downloadLinks[i]?.url || "";
+        row[`سيرفر تحميل ${i + 1}`] = downloadLinks[i]?.url || "";
       }
       return row;
     });
@@ -88,13 +92,16 @@ export const generateExcelFile = (data: MediaData[]) => {
         'الموسم': item.season || 1, 
         'الحلقة': item.episode || 1 
       };
+      const servers = item.servers || [];
+      const downloadLinks = item.downloadLinks || [];
+
       // سيرفرات المشاهدة (من C إلى J)
       for (let i = 0; i < 8; i++) {
-        row[`سيرفر مشاهدة ${i + 1}`] = item.servers[i]?.url || "";
+        row[`سيرفر مشاهدة ${i + 1}`] = servers[i]?.url || "";
       }
       // سيرفرات التحميل (8 سيرفرات للمسلسلات - من K إلى R)
       for (let i = 0; i < 8; i++) {
-        row[`سيرفر تحميل ${i + 1}`] = item.downloadLinks[i]?.url || "";
+        row[`سيرفر تحميل ${i + 1}`] = downloadLinks[i]?.url || "";
       }
       return row;
     });

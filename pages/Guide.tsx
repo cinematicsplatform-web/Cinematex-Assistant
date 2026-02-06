@@ -1,7 +1,24 @@
 
 import React from 'react';
 import { Card } from '../components/ui/Card';
-import { Bot, RefreshCw, FileSpreadsheet, Info, CheckCircle2, AlertTriangle, Code, ArrowLeft, Wand2 } from 'lucide-react';
+import { 
+  Bot, 
+  RefreshCw, 
+  FileSpreadsheet, 
+  Info, 
+  CheckCircle2, 
+  AlertTriangle, 
+  Code, 
+  Globe, 
+  Layers, 
+  ListOrdered, 
+  LayoutGrid,
+  Zap,
+  PlayCircle,
+  DownloadCloud,
+  ArrowRightCircle,
+  SearchCode
+} from 'lucide-react';
 import { motion } from 'framer-motion';
 
 export const Guide: React.FC = () => {
@@ -10,187 +27,171 @@ export const Guide: React.FC = () => {
       
       {/* Hero Section */}
       <div className="text-center space-y-4">
-        <h1 className="text-4xl md:text-5xl font-bold text-white">دليل الاستخدام الشامل</h1>
-        <p className="text-xl text-slate-400 max-w-3xl mx-auto">
-          كل ما تحتاج معرفته عن أدوات مساعد سينماتيكس: كيفية استخراج البيانات، نسخ الروابط تلقائياً، وتصدير الملفات باحترافية.
+        <h1 className="text-4xl md:text-5xl font-bold text-white">دليل الأدوات الشامل</h1>
+        <p className="text-xl text-slate-400 max-w-3xl mx-auto leading-relaxed">
+          تعرف على كيفية عمل محركات "سينماتيكس" الذكية لاستخراج البيانات وتنظيم المحتوى السينمائي باحترافية.
         </p>
       </div>
 
-      {/* Section 1: AI Extractor */}
-      <motion.section 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="space-y-6"
-      >
+      {/* 1. Automated Importer (المستورد الآلي) */}
+      <motion.section initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
         <div className="flex items-center gap-3 border-b border-white/10 pb-4">
-          <div className="p-3 bg-purple-500/20 rounded-xl text-purple-400">
-            <Bot className="w-8 h-8" />
+          <div className="p-3 bg-cyan-500/20 rounded-xl text-cyan-400">
+            <Globe className="w-8 h-8" />
           </div>
           <div>
-            <h2 className="text-2xl font-bold text-white">1. المحلل الذكي (AI Extractor)</h2>
-            <p className="text-slate-400">تحليل الصفحات واستخراج البيانات الوصفية باستخدام Gemini 2.5</p>
+            <h2 className="text-2xl font-bold text-white">1. المستورد الآلي (Automated Importer)</h2>
+            <p className="text-slate-400">استخراج ذكي لفيلم أو حلقة واحدة عبر الرابط المباشر.</p>
           </div>
         </div>
-
         <div className="grid md:grid-cols-2 gap-6">
-          <Card className="h-full">
-            <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-              <Info className="w-5 h-5 text-indigo-400" />
-              كيف يعمل؟
-            </h3>
-            <p className="text-slate-300 leading-relaxed mb-4">
-              هذه الأداة لا تعتمد على قواعد برمجية جامدة (Regex) بل تستخدم الذكاء الاصطناعي لقراءة كود HTML وفهمه كما يفهمه المبرمج المحترف.
+          <Card className="border-cyan-500/20">
+            <h3 className="font-bold text-white mb-3 flex items-center gap-2"><Zap className="w-4 h-4 text-cyan-400" /> آلية العمل</h3>
+            <p className="text-sm text-slate-400 leading-relaxed">
+              يقوم النظام بجلب محتوى HTML الخاص بالرابط عبر "بروكسي" لتجاوز الحظر، ثم يحلله بواسطة AI. إذا وجد النظام أن السيرفرات موجودة في صفحة "مشغل" أو "تحميل" منفصلة، يقوم بالانتقال إليها تلقائياً واستخراج الروابط النهائية.
             </p>
-            <ul className="space-y-3 text-sm text-slate-400">
-              <li className="flex items-start gap-2">
-                <CheckCircle2 className="w-4 h-4 text-emerald-500 mt-0.5" />
-                <span>يستخرج: القصة، البوستر، التقييم، سنة الإصدار، النوع (فيلم/مسلسل).</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <CheckCircle2 className="w-4 h-4 text-emerald-500 mt-0.5" />
-                <span>يستخرج جميع السيرفرات (المشاهدة والتحميل) مع الجودة.</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <CheckCircle2 className="w-4 h-4 text-emerald-500 mt-0.5" />
-                <span><b>الميزة القوية:</b> يستخرج "معرض الصور" (Gallery)، أي صورة في الكود يتم جلبها، مما يوفر عليك عناء البحث عن صور.</span>
-              </li>
-            </ul>
           </Card>
-
-          <Card className="h-full bg-slate-900/40 border-dashed border-slate-700">
-            <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-              <Code className="w-5 h-5 text-yellow-400" />
-              طريقة الحصول على الكود (Source Code)
-            </h3>
-            <ol className="space-y-4 text-sm text-slate-300 list-decimal list-inside">
-              <li className="p-2 bg-slate-800 rounded-lg">افتح صفحة الفيلم أو الحلقة في المتصفح.</li>
-              <li className="p-2 bg-slate-800 rounded-lg">
-                اضغط بزر الفأرة الأيمن في أي مكان فارغ واختر <br/>
-                <span className="font-mono text-yellow-300">View Page Source</span> أو اضغط <span className="font-mono text-yellow-300">Ctrl + U</span>.
-              </li>
-              <li className="p-2 bg-slate-800 rounded-lg">حدد الكل (<span className="font-mono">Ctrl + A</span>) ثم انسخ (<span className="font-mono">Ctrl + C</span>).</li>
-              <li className="p-2 bg-slate-800 rounded-lg">الصق الكود في الأداة واضغط "تحليل".</li>
-            </ol>
+          <Card className="border-cyan-500/20">
+            <h3 className="font-bold text-white mb-3 flex items-center gap-2"><SearchCode className="w-4 h-4 text-cyan-400" /> المدخلات والمخرجات</h3>
+            <ul className="text-xs text-slate-400 space-y-2">
+              <li className="flex items-center gap-2"><ArrowRightCircle className="w-3 h-3" /> <b>المدخل:</b> رابط صفحة واحدة (URL).</li>
+              <li className="flex items-center gap-2"><ArrowRightCircle className="w-3 h-3" /> <b>المخرج:</b> بطاقة معلومات تحتوي على روابط المشاهدة والتحميل النهائية.</li>
+            </ul>
           </Card>
         </div>
       </motion.section>
 
-      {/* Section 2: Cloner */}
-      <motion.section 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2 }}
-        className="space-y-6"
-      >
+      {/* 2. Group Importer (المستورد الجماعي) */}
+      <motion.section initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="space-y-6">
         <div className="flex items-center gap-3 border-b border-white/10 pb-4">
-          <div className="p-3 bg-cyan-500/20 rounded-xl text-cyan-400">
-            <RefreshCw className="w-8 h-8" />
+          <div className="p-3 bg-indigo-500/20 rounded-xl text-indigo-400">
+            <Layers className="w-8 h-8" />
           </div>
           <div>
-            <h2 className="text-2xl font-bold text-white">2. الناسخ الجماعي (Mass Cloner)</h2>
-            <p className="text-slate-400">نقل ملفات Uqload إلى حسابك + إعادة التسمية التلقائية.</p>
+            <h2 className="text-2xl font-bold text-white">2. المستورد الجماعي (Group Importer)</h2>
+            <p className="text-slate-400">معالجة دفعات ضخمة من الروابط في وقت قياسي.</p>
           </div>
         </div>
-
         <Card>
-          <div className="space-y-4">
-            <div className="p-4 bg-cyan-900/10 border border-cyan-500/20 rounded-xl">
-              <h4 className="font-bold text-cyan-300 mb-2 flex items-center gap-2">
-                 <Wand2 className="w-4 h-4" />
-                 نظام إعادة التسمية الذكي (Smart Renaming)
-              </h4>
-              <p className="text-sm text-slate-300 mb-2">
-                يقوم النظام تلقائياً بتنظيف اسم الملف أثناء عملية النسخ:
-              </p>
-              <ul className="list-disc list-inside text-xs text-slate-400 font-mono bg-black/20 p-3 rounded">
-                <li>إزالة أسماء المنافسين: [EgyBest], Cima4u, Akwam, Cima Now CoM, etc.</li>
-                <li>إزالة الأقواس والرموز البرمجية.</li>
-                <li>إضافة مبادئ <b>Cinematix_</b> لتوحيد الهوية.</li>
-                <li className="text-green-400 mt-1">مثال: [EgyBest] Spider-Man &rarr; Cinematix_Spider-Man</li>
-              </ul>
+          <div className="grid md:grid-cols-3 gap-6">
+            <div className="space-y-2">
+              <h4 className="font-bold text-white text-sm">التوازي البرمجي</h4>
+              <p className="text-xs text-slate-400">يعالج النظام 3 روابط في نفس الوقت (Concurrency) لضمان السرعة مع حماية حصة الـ API من النفاد.</p>
             </div>
-            
-            <div className="grid md:grid-cols-2 gap-4 mt-4">
-              <div>
-                <h4 className="font-bold text-white mb-2">آلية النسخ التتابعي:</h4>
-                <p className="text-sm text-slate-400 leading-relaxed">
-                  النظام لا يقوم برفع الروابط عشوائياً. بل يعالج الرابط تلو الآخر:
-                  1. يرسل طلب النسخ.
-                  2. ينتظر رد السيرفر.
-                  3. إذا لم يجد الكود فوراً، ينتظر 10 ثوانٍ ثم يبحث في قائمة ملفاتك للتأكد.
-                  4. يقوم بإعادة التسمية فوراً قبل الانتقال للملف التالي.
-                </p>
-              </div>
-              <div>
-                 <h4 className="font-bold text-white mb-2">مميزات إضافية:</h4>
-                 <ul className="list-disc list-inside text-sm text-slate-400 space-y-1">
-                   <li><b>سجل المحفوظات:</b> يتم حفظ الروابط الجديدة في متصفحك تلقائياً.</li>
-                   <li><b>استعادة البيانات:</b> زر "استيراد آخر 30 ملف" يعيد لك الروابط حتى لو أغلقت الصفحة.</li>
-                   <li><b>تصدير Excel:</b> ملف منظم يحتوي على الروابط الأصلية والجديدة.</li>
-                 </ul>
-              </div>
+            <div className="space-y-2">
+              <h4 className="font-bold text-white text-sm">سير العمل</h4>
+              <p className="text-xs text-slate-400">يتم إدخال قائمة روابط، يقوم النظام بجدولتها، ثم يعرض النتائج الناجحة والفاشلة في جدول تفاعلي.</p>
+            </div>
+            <div className="space-y-2">
+              <h4 className="font-bold text-white text-sm">التصدير</h4>
+              <p className="text-xs text-slate-400">بعد الانتهاء، يمكنك تصدير جميع العناصر الناجحة إلى ملف Excel واحد منظم بضغطة زر.</p>
             </div>
           </div>
         </Card>
       </motion.section>
 
-      {/* Section 3: Excel Extractor */}
-      <motion.section 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.4 }}
-        className="space-y-6"
-      >
+      {/* 3. Segment Extractor (مستخرج الحلقات) */}
+      <motion.section initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="space-y-6">
         <div className="flex items-center gap-3 border-b border-white/10 pb-4">
-          <div className="p-3 bg-indigo-500/20 rounded-xl text-indigo-400">
-            <FileSpreadsheet className="w-8 h-8" />
+          <div className="p-3 bg-amber-500/20 rounded-xl text-amber-400">
+            <ListOrdered className="w-8 h-8" />
           </div>
           <div>
-            <h2 className="text-2xl font-bold text-white">3. مستخرج الإكسيل (Batch Extractor)</h2>
-            <p className="text-slate-400">تحليل كميات ضخمة من الأكواد وتجميعها في ملف واحد.</p>
+            <h2 className="text-2xl font-bold text-white">3. مستخرج الحلقات (Segment Extractor)</h2>
+            <p className="text-slate-400">أتمتة استخراج مسلسل كامل من رابط البداية فقط.</p>
           </div>
         </div>
-
-        <div className="grid md:grid-cols-3 gap-6">
-          <Card className="col-span-1 border-l-4 border-l-indigo-500">
-            <h3 className="font-bold text-white mb-2">التجميع التلقائي للمسلسلات</h3>
-            <p className="text-sm text-slate-400">
-              إذا قمت بإدخال أكواد لـ 5 حلقات من "مسلسل المؤسس عثمان" و 3 حلقات من "Game of Thrones"، سيقوم النظام بإنشاء:
-              <br/>- شيت Excel للمؤسس عثمان.
-              <br/>- شيت Excel لـ GoT.
-              <br/>ويرتب الحلقات (S01E01) داخلهم تلقائياً.
-            </p>
-          </Card>
-          
-          <Card className="col-span-1 border-l-4 border-l-indigo-500">
-             <h3 className="font-bold text-white mb-2">معالجة الأخطاء</h3>
-             <p className="text-sm text-slate-400">
-               إذا فشل النظام في تحليل كود معين، لن يتوقف البرنامج. سيتم تسجيل الخطأ في السجل (Log) والاستمرار في الملفات التالية، مما يجعله مثالياً للعمليات الكبيرة.
+        <div className="grid md:grid-cols-2 gap-6">
+          <Card className="border-amber-500/20">
+             <h3 className="font-bold text-white mb-3">كيف يعمل التتبع؟</h3>
+             <p className="text-sm text-slate-400 leading-relaxed">
+               أدخل رابط "الحلقة الأولى". يقوم النظام بتحليلها، ثم يبحث ذكاء AI عن زر "الحلقة التالية". إذا وجده، يقوم بالانتقال إليه آلياً وتكرار العملية حتى ينتهي المسلسل أو تضغط على "إيقاف".
              </p>
           </Card>
-
-          <Card className="col-span-1 border-l-4 border-l-indigo-500">
-             <h3 className="font-bold text-white mb-2">تنسيق التصدير</h3>
-             <p className="text-sm text-slate-400">
-               الملف الناتج يحتوي على أعمدة ثابتة:
-               <br/>- اسم الفيلم / الحلقة
-               <br/>- 8 أعمدة للسيرفرات
-               <br/>- 2 أعمدة للتحميل
-               <br/>جاهز للاستخدام المباشر.
-             </p>
+          <Card className="border-amber-500/20">
+             <h3 className="font-bold text-white mb-3">لماذا هو مميز؟</h3>
+             <ul className="text-xs text-slate-400 space-y-2">
+               <li><CheckCircle2 className="w-3 h-3 text-emerald-500 inline ml-1" /> لا تحتاج للبحث عن روابط الحلقات يدوياً.</li>
+               <li><CheckCircle2 className="w-3 h-3 text-emerald-500 inline ml-1" /> يتعرف على ترتيب الموسم والحلقة تلقائياً من اسم الصفحة.</li>
+               <li><CheckCircle2 className="w-3 h-3 text-emerald-500 inline ml-1" /> يجمع الحلقات في شيت Excel واحد مرتب تصاعدياً.</li>
+             </ul>
           </Card>
         </div>
       </motion.section>
 
-      {/* Footer Warning */}
-      <div className="p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-xl flex items-start gap-3">
-        <AlertTriangle className="w-6 h-6 text-yellow-500 shrink-0" />
-        <div>
-          <h4 className="font-bold text-yellow-500">تنويه هام</h4>
-          <p className="text-sm text-yellow-200/70">
-            هذا التطبيق يعمل بشكل (Client-Side) في معظمه، ولكن عمليات الذكاء الاصطناعي ونسخ الروابط تتطلب اتصالاً بالإنترنت. تأكد من أن مفتاح API الخاص بـ Gemini ومفتاح Uqload صالحين للعمل.
-          </p>
+      {/* 4. Section Extractor (مستخرج الأقسام) */}
+      <motion.section initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="space-y-6">
+        <div className="flex items-center gap-3 border-b border-white/10 pb-4">
+          <div className="p-3 bg-emerald-500/20 rounded-xl text-emerald-400">
+            <LayoutGrid className="w-8 h-8" />
+          </div>
+          <div>
+            <h2 className="text-2xl font-bold text-white">4. مستخرج الأقسام (Section Extractor)</h2>
+            <p className="text-slate-400">تفريغ محتوى "قسم" كامل (مثل قسم أفلام 2024) دفعة واحدة.</p>
+          </div>
         </div>
+        <Card className="bg-emerald-900/10 border-emerald-500/20">
+          <div className="flex flex-col md:flex-row gap-6">
+             <div className="flex-1">
+               <h4 className="font-bold text-white mb-2">مرحلة الفرز الذكي</h4>
+               <p className="text-sm text-slate-400">يقوم AI بمسح صفحة القسم واستخراج روابط "التفاصيل" فقط، متجاهلاً روابط الأقسام الأخرى أو الروابط الاجتماعية.</p>
+             </div>
+             <div className="flex-1">
+               <h4 className="font-bold text-white mb-2">المعالجة الكلية</h4>
+               <p className="text-sm text-slate-400">بعد تحديد الروابط (عادة 20-30 رابط في الصفحة)، يبدأ النظام بمعالجتها واحداً تلو الآخر واستخراج كافة سيرفراتها.</p>
+             </div>
+          </div>
+        </Card>
+      </motion.section>
+
+      {/* 5. Smart Analyzer (المحلل الذكي) */}
+      <motion.section initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className="space-y-6">
+        <div className="flex items-center gap-3 border-b border-white/10 pb-4">
+          <div className="p-3 bg-purple-500/20 rounded-xl text-purple-400">
+            <Bot className="w-8 h-8" />
+          </div>
+          <div>
+            <h2 className="text-2xl font-bold text-white">5. المحلل الذكي (Smart Analyzer)</h2>
+            <p className="text-slate-400">التحليل اليدوي العميق لأكواد HTML واستخراج البيانات الوصفية.</p>
+          </div>
+        </div>
+        <div className="grid md:grid-cols-2 gap-8">
+           <div className="space-y-4">
+              <h3 className="font-bold text-white flex items-center gap-2"><Code className="w-5 h-5 text-purple-400" /> طريقة الاستخدام</h3>
+              <p className="text-sm text-slate-400">
+                هذه الأداة مخصصة للحالات التي يفشل فيها الجلب الآلي. قم بنسخ كود المصدر (Ctrl+U) ولصقه يدوياً.
+              </p>
+              <div className="p-4 bg-slate-900 rounded-xl border border-white/5 space-y-2">
+                <div className="text-xs text-indigo-300 font-bold">البيانات المستخرجة:</div>
+                <div className="grid grid-cols-2 gap-2 text-[10px] text-slate-500 uppercase">
+                  <span>• القصة (Plot)</span>
+                  <span>• البوستر (Poster)</span>
+                  <span>• التقييم (Rating)</span>
+                  <span>• الممثلين (Cast)</span>
+                  <span>• معرض الصور (Gallery)</span>
+                  <span>• روابط السيرفرات</span>
+                </div>
+              </div>
+           </div>
+           <Card className="bg-slate-900/60 border-dashed border-slate-700">
+              <h3 className="font-bold text-white mb-4">هيكل المخرجات</h3>
+              <p className="text-xs text-slate-400 leading-relaxed">
+                يتم عرض النتائج في واجهة سينمائية تفاعلية مقسمة إلى تبويبات:
+                <br/><br/>
+                <b>1. المشاهدة:</b> جميع المشغلات المتاحة.
+                <br/>
+                <b>2. التحميل:</b> جميع الروابط المباشرة.
+                <br/>
+                <b>3. معرض الصور:</b> استخراج جميع صور الفيلم الموجودة في الكود لتسهيل تصميم البوسترات.
+              </p>
+           </Card>
+        </div>
+      </motion.section>
+
+      <div className="pt-10 flex justify-center">
+         <div className="p-4 bg-indigo-500/10 border border-indigo-500/20 rounded-2xl flex items-center gap-3 text-indigo-300 text-sm font-bold">
+           <Info className="w-5 h-5" /> ملاحظة: جميع البيانات المستخرجة من أي أداة يمكن تجميعها وتصديرها لملف Excel منظم.
+         </div>
       </div>
 
     </div>

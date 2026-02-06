@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Film, Menu, X, Bot, Settings, Globe, Layers, ListOrdered, LayoutGrid } from 'lucide-react';
+import { Film, Menu, X, Bot, Settings, Globe, Layers, ListOrdered, LayoutGrid, Zap } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { cn } from '../lib/utils';
 
@@ -19,6 +19,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     { name: 'مستخرج الحلقات', path: '/serial-extractor' },
     { name: 'مستخرج الأقسام', path: '/page-extractor' },
     { name: 'المحلل الذكي', path: '/ai-extractor' },
+    { name: 'أداة الاستخراج', path: '/extraction-tool' },
   ];
 
   return (
@@ -41,12 +42,23 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
                   {item.path === '/serial-extractor' && <ListOrdered className="w-4 h-4 text-amber-400" />}
                   {item.path === '/page-extractor' && <LayoutGrid className="w-4 h-4 text-emerald-400" />}
                   {item.path === '/ai-extractor' && <Bot className="w-4 h-4" />}
+                  {item.path === '/extraction-tool' && <Zap className="w-4 h-4 text-purple-400" />}
                   {item.name}
                 </Link>
               ))}
               <div className="h-6 w-px bg-white/10 mx-2" />
-              <Link to="/settings" className={cn("p-2 rounded-full transition-colors", location.pathname === '/settings' ? "bg-white/10 text-white" : "text-slate-400 hover:text-white hover:bg-white/5")} title="الإعدادات">
-                <Settings className="w-5 h-5" />
+              <Link 
+                to="/settings" 
+                className={cn(
+                  "p-2.5 rounded-xl transition-all duration-300 flex items-center gap-2", 
+                  location.pathname === '/settings' 
+                    ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/20" 
+                    : "text-slate-400 hover:text-white hover:bg-white/10"
+                )} 
+                title="الإعدادات المتقدمة"
+              >
+                <Settings className={cn("w-5 h-5", location.pathname === '/settings' && "animate-[spin_4s_linear_infinite]")} />
+                <span className="text-xs font-bold hidden lg:inline">الإعدادات</span>
               </Link>
             </div>
 
@@ -64,7 +76,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
               {navItems.map((item) => (
                 <Link key={item.path} to={item.path} onClick={() => setIsMenuOpen(false)} className={cn("block px-3 py-2 rounded-md text-base font-medium", location.pathname === item.path ? "bg-indigo-600/20 text-indigo-300" : "text-slate-400 hover:text-white hover:bg-white/5")}>{item.name}</Link>
               ))}
-              <Link to="/settings" onClick={() => setIsMenuOpen(false)} className="block px-3 py-2 rounded-md text-base font-medium text-slate-400">الإعدادات</Link>
+              <Link to="/settings" onClick={() => setIsMenuOpen(false)} className="block px-3 py-2 rounded-md text-base font-medium text-slate-400 flex items-center gap-2"><Settings className="w-4 h-4" /> الإعدادات</Link>
             </div>
           </div>
         )}
